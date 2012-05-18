@@ -54,42 +54,13 @@ VMC.Plugin(VMC::Service) do
       end
     end
 
-    # TODO: Move most of this into a nice API
-    port = pick_tunnel_port(input(:port))
-
-    if tunnel_pushed?
-      auth = tunnel_auth
-    else
-      auth = UUIDTools::UUID.random_create.to_s
-
-      with_progress("Deploying #{c(tunnel_appname, :blue)}") do
-        push_helper(auth, service)
-        start_helper
-      end
-    end
-
-    unless tunnel_healthy?(auth)
-      with_progress("Redeploying #{c(tunnel_appname, :blue)}") do
-        delete_helper
-        push_helper(auth, service)
-        start_helper
-      end
-    end
-
-    unless tunnel_binds?(service)
-      with_progress("Binding service to #{c(tunnel_appname, :blue)}") do
-        bind_to_helper(service)
-      end
-    end
+    tunnel = CFTunnel.new(client, info)
+    port = tunnel.pick_port!(input(:port))
 
     conn_info =
-      with_progress("Getting connection info") do
-        tunnel_connection_info(info.vendor, service, auth)
+      with_progress("Opening tunnel on port #{c(port, :blue)}") do
+        tunnel.open!
       end
-
-    with_progress("Starting tunnel on port #{c(port, :green)}") do
-      start_tunnel(port, conn_info, auth)
-    end
 
     if client_name == "none"
       unless simple_output?
@@ -102,10 +73,10 @@ VMC.Plugin(VMC::Service) do
         puts "Press Ctrl-C to exit..."
       end
 
-      wait_for_tunnel_end
+      tunnel.wait_for_end
     else
       with_progress("Waiting for local tunnel to become available") do
-        wait_for_tunnel_start(port)
+        tunnel.wait_for_start
       end
 
       unless start_local_prog(clients, client_name, conn_info, port)
