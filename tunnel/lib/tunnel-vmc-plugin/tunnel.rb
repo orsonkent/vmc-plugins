@@ -374,7 +374,9 @@ module VMCTunnel
 
   def resolve_symbols(str, info, local_port)
     str.gsub(/\$\{\s*([^\}]+)\s*\}/) do
-      case $1
+      sym = $1
+
+      case sym
       when "host"
         # TODO: determine proper host
         "localhost"
@@ -382,8 +384,10 @@ module VMCTunnel
         local_port
       when "user", "username"
         info["username"]
+      when /^ask (.+)/
+        ask($1)
       else
-        info[$1] || ask($1)
+        info[sym] || raise("Unknown symbol in config: #{sym}")
       end
     end
   end

@@ -3,12 +3,12 @@ redis:
 
 mysql:
   mysql: --protocol=TCP --host=${host} --port=${port} --user=${user} --password=${password} ${name}
-  mysqldump: --protocol=TCP --host=${host} --port=${port} --user=${user} --password=${password} ${name} > ${Output file}
+  mysqldump: --protocol=TCP --host=${host} --port=${port} --user=${user} --password=${password} ${name} > ${ask Output file}
 
 mongodb:
   mongo: --host ${host} --port ${port} -u ${user} -p ${password} ${name}
   mongodump: --host ${host} --port ${port} -u ${user} -p ${password} --db ${name}
-  mongorestore: --host ${host} --port ${port} -u ${user} -p ${password} --db ${name} ${Directory or filename to restore from}
+  mongorestore: --host ${host} --port ${port} -u ${user} -p ${password} --db ${name} ${ask Directory or filename to restore from}
 
 postgresql:
   psql:
