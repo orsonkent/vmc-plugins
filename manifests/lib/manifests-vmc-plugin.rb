@@ -103,7 +103,7 @@ module VMCManifests
         resolve_lexically(v, ctx)
       end
     when String
-      val.gsub!(/\$\{([[:alnum:]\-]+)\}/) do
+      val.gsub!(/\$\{([^\}]+)\}/) do
         resolve_symbol($1, ctx)
       end
     end
@@ -122,6 +122,9 @@ module VMCManifests
 
     when "random-word"
       "%04x" % [rand(0x0100000)]
+
+    when /^ask (.+)/
+      ask($1)
 
     else
       found = find_symbol(sym, ctx)
