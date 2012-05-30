@@ -1,9 +1,7 @@
 require "addressable/uri"
 
-begin
-  require "caldecott"
-rescue LoadError
-end
+require "caldecott"
+
 
 class CFTunnel
   HELPER_NAME = "caldecott"

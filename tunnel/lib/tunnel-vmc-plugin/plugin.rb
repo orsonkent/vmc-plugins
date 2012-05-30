@@ -4,43 +4,25 @@ require File.expand_path("../tunnel", __FILE__)
 VMC.Plugin(VMC::Service) do
   include VMCTunnel
 
-  desc "tunnel SERVICE [CLIENT]", "create a local tunnel to a service"
+  desc "tunnel [SERVICE] [CLIENT]", "Create a local tunnel to a service."
+  group :services, :manage
   flag(:service) { |choices|
     ask("Which service?", :choices => choices)
   }
   flag(:client)
   flag(:port, :default => 10000)
   def tunnel(service = nil, client_name = nil)
-    unless defined? Caldecott
-      $stderr.puts "To use `vmc tunnel', you must first install Caldecott:"
-      $stderr.puts ""
-      $stderr.puts "\tgem install caldecott"
-      $stderr.puts ""
-      $stderr.puts "Note that you'll need a C compiler. If you're on OS X, Xcode"
-      $stderr.puts "will provide one. If you're on Windows, try DevKit."
-      $stderr.puts ""
-      $stderr.puts "This manual step will be removed in the future."
-      $stderr.puts ""
-      err "Caldecott is not installed."
-      return
-    end
-
     client_name ||= input(:client)
 
     services = client.services
-    if services.empty?
-      err "No services available to tunnel to"
-      return
-    end
+
+    fail "No services available for tunneling." if services.empty?
 
     service ||= input(:service, services.collect(&:name).sort)
 
     info = services.find { |s| s.name == service }
 
-    unless info
-      err "Unknown service '#{service}'"
-      return
-    end
+    fail "Unknown service '#{service}'" unless info
 
     clients = tunnel_clients[info.vendor] || {}
 
@@ -80,7 +62,7 @@ VMC.Plugin(VMC::Service) do
       end
 
       unless start_local_prog(clients, client_name, conn_info, port)
-        err "'#{client_name}' execution failed; is it in your $PATH?"
+        fail "'#{client_name}' execution failed; is it in your $PATH?"
       end
     end
   end
