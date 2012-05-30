@@ -16,36 +16,36 @@ VMC.Plugin(VMC::App) do
   # app(s) described by the manifest, in dependency-order
   [:start, :instances, :logs].each do |wrap|
     around(wrap) do |cmd, args|
-      if args.empty?
+      if args.empty? && !passed_value(:name)
         each_app do |a|
-          cmd.call(a["name"])
+          cmd.call(:name => a["name"])
           puts "" unless simple_output?
         end || err("No applications to act on.")
       else
-        cmd.call(args)
+        cmd.call
       end
     end
   end
 
   # same as above but in reverse dependency-order
   around(:stop) do |cmd, args|
-    if args.empty?
+    if args.empty? && !passed_value(:name)
       reversed = []
       each_app do |a|
         reversed.unshift a["name"]
       end || err("No applications to act on.")
 
       reversed.each do |name|
-        cmd.call(name)
+        cmd.call(:name => name)
         puts "" unless simple_output?
       end
     else
-      cmd.call(args)
+      cmd.call
     end
   end
 
   around(:delete) do |cmd, args|
-    if args.empty? && !options[:all]
+    if args.empty? && !options[:all] && !passed_value(:name)
       reversed = []
       has_manifest =
         each_app do |a|
@@ -53,22 +53,22 @@ VMC.Plugin(VMC::App) do
         end
 
       unless has_manifest
-        return cmd.call(args)
+        return cmd.call
       end
 
       reversed.each do |name|
-        cmd.call(name)
+        cmd.call(:name => name)
         puts "" unless simple_output?
       end
     else
-      cmd.call(args)
+      cmd.call
     end
   end
 
   # stop apps in reverse dependency order,
   # and then start in dependency order
   around(:restart) do |cmd, args|
-    if args.empty?
+    if args.empty? && !passed_value(:name)
       reversed = []
       forwards = []
       each_app do |a|
@@ -77,55 +77,53 @@ VMC.Plugin(VMC::App) do
       end || err("No applications to act on.")
 
       reversed.each do |name|
-        stop(name)
+        with_inputs(:name => name) do
+          stop
+        end
       end
 
       puts "" unless simple_output?
 
       forwards.each do |name|
-        start(name)
+        with_inputs(:name => name) do
+          start
+        end
       end
     else
-      cmd.call(args)
+      cmd.call
     end
   end
 
   # push and sync meta changes in the manifest
   # also sets env data on creation if present in manifest
   around(:push) do |push, args|
-    if args.empty?
-      all_pushed =
-        each_app do |a|
-          app = client.app(a["name"])
-          updating = app.exists?
+    name = passed_value(:name) || args.first
 
-          start = input(:start)
+    all_pushed =
+      each_app do |a|
+        next if name && a["name"] != name
 
-          begin
-            inputs[:start] = false
+        app = client.app(a["name"])
+        updating = app.exists?
 
-            sync_changes(a)
-            push.call(a["name"])
+        sync_changes(a)
+        push.call(:name => a["name"], :start => false)
 
-            unless updating
-              app.env = a["env"]
+        unless updating
+          app.env = a["env"]
 
-              if start
-                start(a["name"])
-              else
-                app.update!
-              end
+          if input(:start)
+            with_inputs(:name => a["name"]) do
+              start
             end
-          ensure
-            inputs[:start] = start
+          else
+            app.update!
           end
-
-          puts "" unless simple_output?
         end
 
-      push.call unless all_pushed
-    else
-      push.call(args)
-    end
+        puts "" unless simple_output?
+      end
+
+    push.call unless all_pushed
   end
 end

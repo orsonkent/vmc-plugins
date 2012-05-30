@@ -251,41 +251,18 @@ module VMCManifests
 
   private
 
-  def inputs
-    @inputs ||= {}
-  end
-
   # call the block as if the app info and path were given as flags
-  def with_app(path, info)
-    before_path = inputs[:path]
-    before_info = {}
-
-    inputs[:path] = path
-
+  def with_app(path, info, &blk)
+    inputs = {:path => path}
     info.each do |k, v|
       if k == "mem"
         k = "memory"
       end
 
-      before_info[k.to_sym] = inputs[k.to_sym]
       inputs[k.to_sym] = v
     end
 
-    yield
-  ensure
-    if before_path.nil?
-      inputs.delete :path
-    else
-      inputs[:path] = before_path
-    end
-
-    before_info.each do |k, v|
-      if v.nil?
-        inputs.delete k
-      else
-        inputs[k] = v
-      end
-    end
+    with_inputs(inputs, &blk)
   end
 
   # sort applications in dependency order
