@@ -52,13 +52,13 @@ VMC.Plugin(VMC::App) do
           reversed.unshift a["name"]
         end
 
-      unless has_manifest
-        return cmd.call
-      end
-
-      reversed.each do |name|
-        cmd.call(:name => name)
-        puts "" unless simple_output?
+      if has_manifest
+        reversed.each do |name|
+          cmd.call(:name => name)
+          puts "" unless simple_output?
+        end
+      else
+        cmd.call
       end
     else
       cmd.call
