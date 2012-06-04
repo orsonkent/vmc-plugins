@@ -107,7 +107,11 @@ VMC.Plugin(VMC::App) do
         updating = app.exists?
 
         sync_changes(a)
-        push.call(:name => a["name"], :start => false)
+        push.call(
+          :name => a["name"],
+          :start => false,
+          :bind_services => false,
+          :create_services => false)
 
         unless updating
           app.env = a["env"]
