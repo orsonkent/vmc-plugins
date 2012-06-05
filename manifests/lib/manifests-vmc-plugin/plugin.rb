@@ -128,6 +128,29 @@ VMC.Plugin(VMC::App) do
         puts "" unless simple_output?
       end
 
-    push.call unless all_pushed
+    unless all_pushed
+      begin
+        push.call
+      ensure
+        meta = {
+          "name" => passed_value(:name) || args.first,
+          "framework" => passed_value(:framework),
+          "runtime" => passed_value(:runtime),
+          "memory" => passed_value(:memory),
+          "instances" => passed_value(:instances).to_i,
+          "url" => passed_value(:url)
+        }
+
+        unless manifest_file || meta.any? { |k, v| v.nil? }
+          puts ""
+
+          if ask("Save configuration?", :default => false)
+            File.open("manifest.yml", "w") do |io|
+              YAML.dump({"applications" => {options[:path] => meta}}, io)
+            end
+          end
+        end
+      end
+    end
   end
 end
