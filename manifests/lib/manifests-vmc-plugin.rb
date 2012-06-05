@@ -61,7 +61,7 @@ module VMCManifests
 
   # merge the manifest at `path' into the `child'
   def merge_parent(child, path)
-    file = File.expand_path("../" + path, manifest_file)
+    file = File.expand_path(path, File.dirname(manifest_file))
     merge_manifest(child, build_manifest(file))
   end
 
@@ -196,7 +196,7 @@ module VMCManifests
         info["framework"] = info["framework"]["name"]
       end
 
-      app = File.expand_path("../" + path, manifest_file)
+      app = File.expand_path(path, File.dirname(manifest_file))
       if find_path == app
         return toplevel_attributes.merge info
       end
@@ -225,7 +225,7 @@ module VMCManifests
       else
         # all apps in the manifest
         ordered_by_deps(all_apps).each do |path|
-          app = File.expand_path("../" + path, manifest_file)
+          app = File.expand_path(path, File.dirname(manifest_file))
           info = app_info(app)
 
           with_app(app, info) do
@@ -268,22 +268,24 @@ module VMCManifests
   # sort applications in dependency order
   # e.g. if A depends on B, B will be listed before A
   def ordered_by_deps(apps, abspaths = nil, processed = Set[])
+    mandir = File.dirname(manifest_file)
+
     unless abspaths
       abspaths = {}
       apps.each do |p, i|
-        ep = File.expand_path("../" + p, manifest_file)
+        ep = File.expand_path(p, mandir)
         abspaths[ep] = i
       end
     end
 
     ordered = []
     apps.each do |path, info|
-      epath = File.expand_path("../" + path, manifest_file)
+      epath = File.expand_path(path, mandir)
 
       if deps = info["depends-on"]
         dep_apps = {}
         deps.each do |dep|
-          edep = File.expand_path("../" + dep, manifest_file)
+          edep = File.expand_path(dep, mandir)
 
           raise "Circular dependency detected." if processed.include? edep
 
