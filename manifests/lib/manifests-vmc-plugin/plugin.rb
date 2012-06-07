@@ -146,7 +146,9 @@ VMC.Plugin(VMC::App) do
 
           if ask("Save configuration?", :default => false)
             File.open("manifest.yml", "w") do |io|
-              YAML.dump({"applications" => {options[:path] => meta}}, io)
+              YAML.dump(
+                {"applications" => {(options[:path] || ".") => meta}},
+                io)
             end
           end
         end
