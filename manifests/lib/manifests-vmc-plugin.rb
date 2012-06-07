@@ -359,7 +359,7 @@ module VMCManifests
       diff.each do |k, d|
         old, new = d
         label = c(k, need_restage.include?(k) ? :red : :green)
-        puts "  #{label}: #{old.inspect} #{c("->", :black)} #{new.inspect}"
+        puts "  #{label}: #{old.inspect} #{c("->", :dim)} #{new.inspect}"
       end
 
       puts ""
