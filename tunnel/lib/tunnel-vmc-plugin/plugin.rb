@@ -40,7 +40,7 @@ VMC.Plugin(VMC::Service) do
     port = tunnel.pick_port!(input(:port))
 
     conn_info =
-      with_progress("Opening tunnel on port #{c(port, :blue)}") do
+      with_progress("Opening tunnel on port #{c(port, :name)}") do
         tunnel.open!
       end
 

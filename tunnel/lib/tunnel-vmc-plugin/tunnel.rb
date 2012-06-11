@@ -321,8 +321,7 @@ module VMCTunnel
       # about the items to return.  It should return all of them if
       # the service is unknown so that we don't have to do this weird
       # filtering.
-      print "  #{k.ljust align_len}: "
-      puts c("#{info[k]}", :yellow)
+      print "  #{k.ljust align_len}: #{b(info[k])}"
     end
 
     puts ""

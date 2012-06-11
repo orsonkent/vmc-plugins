@@ -355,10 +355,10 @@ module VMCManifests
     return if diff.empty?
 
     unless simple_output?
-      puts "Detected the following changes to #{c(app.name, :blue)}:"
+      puts "Detected the following changes to #{c(app.name, :name)}:"
       diff.each do |k, d|
         old, new = d
-        label = c(k, need_restage.include?(k) ? :red : :green)
+        label = c(k, need_restage.include?(k) ? :bad : :good)
         puts "  #{label}: #{old.inspect} #{c("->", :dim)} #{new.inspect}"
       end
 
@@ -366,24 +366,24 @@ module VMCManifests
     end
 
     if need_restage.empty?
-      with_progress("Updating #{c(app.name, :blue)}") do
+      with_progress("Updating #{c(app.name, :name)}") do
         app.update!
       end
     else
       unless simple_output?
         puts "The following changes require the app to be recreated:"
         need_restage.each do |n|
-          puts "  #{c(n, :magenta)}"
+          puts "  #{c(n, :error)}"
         end
         puts ""
       end
 
       if force? || ask("Redeploy?", :default => false)
-        with_progress("Deleting #{c(app.name, :blue)}") do
+        with_progress("Deleting #{c(app.name, :name)}") do
           app.delete!
         end
 
-        with_progress("Recreating #{c(app.name, :blue)}") do
+        with_progress("Recreating #{c(app.name, :name)}") do
           app.create!
         end
       end
