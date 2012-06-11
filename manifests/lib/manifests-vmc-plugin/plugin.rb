@@ -14,7 +14,8 @@ VMC.Plugin(VMC::App) do
 
   # basic commands that, when given no args, act on the
   # app(s) described by the manifest, in dependency-order
-  [:start, :instances, :logs].each do |wrap|
+  [:start, :instances, :scale, :logs,
+   :file, :files, :health, :stats].each do |wrap|
     around(wrap) do |cmd, args|
       if args.empty? && !passed_value(:name)
         each_app do |a|
