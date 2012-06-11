@@ -142,6 +142,10 @@ VMC.Plugin(VMC::App) do
           "url" => passed_value(:url)
         }
 
+        if cmd = passed_value(:command)
+          meta["command"] = cmd
+        end
+
         unless manifest_file || meta.any? { |k, v| v.nil? }
           puts ""
 
