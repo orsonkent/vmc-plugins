@@ -329,7 +329,7 @@ module VMCManifests
           diff[k] = [old, v]
           app.env = v
         end
-      when "framework", "runtime"
+      when "framework", "runtime", "command"
         old = app.send(k)
         if old != v
           diff[k] = [old, v]
