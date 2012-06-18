@@ -104,25 +104,14 @@ VMC.Plugin(VMC::App) do
         next if name && a["name"] != name
 
         app = client.app(a["name"])
-        updating = app.exists?
 
         sync_changes(a)
-        push.call(
-          :name => a["name"],
-          :start => false,
-          :bind_services => false,
-          :create_services => false)
 
-        unless updating
-          app.env = a["env"]
-
-          if input(:start)
-            with_inputs(:name => a["name"]) do
-              start
-            end
-          else
-            app.update!
-          end
+        with_filters(:push_app => proc { |app| app.env = a["env"]; app }) do
+          push.call(
+            :name => a["name"],
+            :bind_services => false,
+            :create_services => false)
         end
 
         puts "" unless simple_output?
