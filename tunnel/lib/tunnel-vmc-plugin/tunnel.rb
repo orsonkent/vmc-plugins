@@ -29,7 +29,7 @@ class CFTunnel
       auth = create_helper
     end
 
-    bind_to_helper unless helper_already_binds?
+    bind_to_helper if @service && !helper_already_binds?
 
     info = get_connection_info(auth)
 
@@ -132,7 +132,7 @@ class CFTunnel
     app.total_instances = 1
     app.memory = 64
     app.env = ["CALDECOTT_AUTH=#{token}"]
-    app.services = [@service.name]
+    app.services = [@service.name] if @service
     app.create!
 
     begin
