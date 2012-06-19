@@ -389,4 +389,44 @@ module VMCManifests
       end
     end
   end
+
+  def ask_to_save(app)
+    return if manifest_file
+
+    services = app.services.collect { |name| client.service(name) }
+
+    meta = {
+      "name" => app.name,
+      "framework" => app.framework,
+      "runtime" => app.runtime,
+      "memory" => human_size(app.memory, 0),
+      "instances" => app.total_instances,
+      "url" => app.url
+    }
+
+    unless services.empty?
+      meta["services"] = {}
+
+      services.each do |s|
+        meta["services"][s.name] = {
+          "vendor" => s.vendor,
+          "version" => s.version
+        }
+      end
+    end
+
+    if cmd = app.command
+      meta["command"] = cmd
+    end
+
+    if ask("Save configuration?", :default => false)
+      File.open("manifest.yml", "w") do |io|
+        YAML.dump(
+          {"applications" => {(options[:path] || ".") => meta}},
+          io)
+      end
+
+      puts "Saved to #{c("manifest.yml", :name)}."
+    end
+  end
 end

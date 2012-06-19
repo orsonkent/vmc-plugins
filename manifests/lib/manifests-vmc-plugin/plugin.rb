@@ -118,33 +118,10 @@ VMC.Plugin(VMC::App) do
       end
 
     unless all_pushed
-      begin
+      bound = []
+
+      with_filters(:push_app => proc { |app| ask_to_save(app); app }) do
         push.call
-      ensure
-        meta = {
-          "name" => passed_value(:name) || args.first,
-          "framework" => passed_value(:framework),
-          "runtime" => passed_value(:runtime),
-          "memory" => passed_value(:memory),
-          "instances" => passed_value(:instances).to_i,
-          "url" => passed_value(:url)
-        }
-
-        if cmd = passed_value(:command)
-          meta["command"] = cmd
-        end
-
-        unless manifest_file || meta.any? { |k, v| v.nil? }
-          puts ""
-
-          if ask("Save configuration?", :default => false)
-            File.open("manifest.yml", "w") do |io|
-              YAML.dump(
-                {"applications" => {(options[:path] || ".") => meta}},
-                io)
-            end
-          end
-        end
       end
     end
   end
