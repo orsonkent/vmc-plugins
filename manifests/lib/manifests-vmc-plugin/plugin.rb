@@ -1,5 +1,5 @@
 require "vmc/plugin"
-require File.expand_path("../../manifests-vmc-plugin", __FILE__)
+require "manifests-vmc-plugin"
 
 VMC.Plugin do
   class_option :manifest,

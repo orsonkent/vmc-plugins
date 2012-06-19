@@ -1,5 +1,5 @@
 require "vmc/plugin"
-require File.expand_path("../tunnel", __FILE__)
+require "tunnel-vmc-plugin/tunnel"
 
 VMC.Plugin(VMC::Service) do
   include VMCTunnel
