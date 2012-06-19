@@ -107,7 +107,7 @@ VMC.Plugin(VMC::App) do
 
         sync_changes(a)
 
-        with_filters(:push_app => proc { |app| app.env = a["env"]; app }) do
+        with_filters(:push_app => proc { |app| setup_app(app, a); app }) do
           push.call(
             :name => a["name"],
             :bind_services => false,

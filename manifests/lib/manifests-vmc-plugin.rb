@@ -429,4 +429,32 @@ module VMCManifests
       puts "Saved to #{c("manifest.yml", :name)}."
     end
   end
+
+  def setup_app(app, info)
+    app.env = info["env"]
+
+    return if !info["services"] || info["services"].empty?
+
+    services = client.system_services
+
+    info["services"].each do |name, svc|
+      service = client.service(name)
+
+      unless service.exists?
+        service.vendor = svc["vendor"] || svc["type"]
+
+        service_meta = services[service.vendor]
+
+        service.type = service_meta[:type]
+        service.version = svc["version"] || service_meta[:versions].first
+        service.tier = "free"
+
+        with_progress("Creating service #{c(service.name, :name)}") do
+          service.create!
+        end
+      end
+    end
+
+    app.services = info["services"].keys
+  end
 end
