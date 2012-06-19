@@ -209,14 +209,15 @@ module VMCManifests
   # inputs for each app
   def each_app
     given_path = passed_value(:path)
+    full_path = given_path && File.expand_path(given_path)
 
     if manifest and all_apps = manifest["applications"]
+      use_inputs = all_apps.size == 1
+
       # given a specific application
       if given_path
-        full_path = File.expand_path(given_path)
-
         if info = app_info(full_path)
-          with_app(full_path, info) do
+          with_app(full_path, info, use_inputs) do
             yield info
           end
         else
@@ -228,7 +229,7 @@ module VMCManifests
           app = File.expand_path(path, File.dirname(manifest_file))
           info = app_info(app)
 
-          with_app(app, info) do
+          with_app(app, info, use_inputs) do
             yield info
           end
         end
@@ -238,7 +239,7 @@ module VMCManifests
     
     # manually created or legacy single-app manifest
     elsif single = toplevel_attributes
-      with_app(full_path || ".", single) do
+      with_app(full_path || ".", single, true) do
         yield single
       end
 
@@ -252,7 +253,7 @@ module VMCManifests
   private
 
   # call the block as if the app info and path were given as flags
-  def with_app(path, info, &blk)
+  def with_app(path, info, use_inputs = false, &blk)
     inputs = {:path => path}
     info.each do |k, v|
       input = k.to_sym
@@ -261,7 +262,7 @@ module VMCManifests
         input = :memory
       end
 
-      inputs[input] = v
+      inputs[input] = use_inputs && passed_value(input) || v
     end
 
     with_inputs(inputs, &blk)

@@ -99,17 +99,27 @@ VMC.Plugin(VMC::App) do
   around(:push) do |push, args|
     name = passed_value(:name) || args.first
 
+    use_name =
+      if apps = manifest["applications"]
+        apps.size == 1
+      else
+        # legacy single-app manifest
+        true
+      end
+
     all_pushed =
-      each_app do |a|
-        next if name && a["name"] != name
+      each_app do |info|
+        next if !use_name && name && info["name"] != name
 
-        app = client.app(a["name"])
+        app_name = use_name ? name : info["name"]
 
-        sync_changes(a)
+        app = client.app(app_name)
 
-        with_filters(:push_app => proc { |app| setup_app(app, a); app }) do
+        sync_changes(info)
+
+        with_filters(:push_app => proc { |a| setup_app(a, info); a }) do
           push.call(
-            :name => a["name"],
+            :name => app_name,
             :bind_services => false,
             :create_services => false)
         end
@@ -120,7 +130,7 @@ VMC.Plugin(VMC::App) do
     unless all_pushed
       bound = []
 
-      with_filters(:push_app => proc { |app| ask_to_save(app); app }) do
+      with_filters(:push_app => proc { |a| ask_to_save(a); a}) do
         push.call
       end
     end
