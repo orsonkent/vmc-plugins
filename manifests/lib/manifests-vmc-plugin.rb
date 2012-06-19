@@ -255,11 +255,13 @@ module VMCManifests
   def with_app(path, info, &blk)
     inputs = {:path => path}
     info.each do |k, v|
-      if k == "mem"
-        k = "memory"
+      input = k.to_sym
+
+      if input == :mem
+        input = :memory
       end
 
-      inputs[k.to_sym] = v
+      inputs[input] = v
     end
 
     with_inputs(inputs, &blk)
@@ -319,14 +321,15 @@ module VMCManifests
       case k
       when /ur[li]s?/
         old = app.urls
-        if old != Array(v)
-          diff[k] = [old, v]
-          app.urls = Array(v)
+        new = Array(v)
+        if old != new
+          diff["urls"] = [old.inspect, new.inspect]
+          app.urls = new
         end
       when "env"
         old = app.env
         if old != v
-          diff[k] = [old, v]
+          diff[k] = [old.inspect, v.inspect]
           app.env = v
         end
       when "framework", "runtime", "command"
@@ -345,8 +348,9 @@ module VMCManifests
       when "mem", "memory"
         old = app.memory
         new = megabytes(v)
+
         if old != new
-          diff["memory"] = [old, new]
+          diff["memory"] = [human_size(old * 1024 * 1024, 0), v]
           app.memory = new
         end
       end
@@ -359,7 +363,7 @@ module VMCManifests
       diff.each do |k, d|
         old, new = d
         label = c(k, need_restage.include?(k) ? :bad : :good)
-        puts "  #{label}: #{old.inspect} #{c("->", :dim)} #{new.inspect}"
+        puts "  #{label}: #{old} #{c("->", :dim)} #{new}"
       end
 
       puts ""
