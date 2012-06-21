@@ -100,7 +100,7 @@ VMC.Plugin(VMC::App) do
     name = passed_value(:name) || args.first
 
     use_name =
-      if apps = manifest["applications"]
+      if manifest && apps = manifest["applications"]
         apps.size == 1
       else
         # legacy single-app manifest
