@@ -22,7 +22,7 @@ module VMCManifests
 
   # find the manifest file to work with
   def manifest_file
-    return options[:manifest] if options[:manifest]
+    return option(:manifest) if option(:manifest)
     return @manifest_file if @manifest_file
 
     where = Dir.pwd
@@ -188,60 +188,58 @@ module VMCManifests
     end
   end
 
-  def app_info(find_path)
-    return unless manifest and manifest["applications"]
-    
-    manifest["applications"].each do |path, info|
-      if info["framework"].is_a?(Hash)
-        info["framework"] = info["framework"]["name"]
+  def app_info(find_path, input = nil)
+    return unless manifest
+
+    mandir = File.dirname(manifest_file)
+    full_path = File.expand_path(find_path, mandir)
+
+    path, info =
+      if apps = manifest["applications"]
+        manifest["applications"].find do |path, info|
+          if info["framework"].is_a?(Hash)
+            info["framework"] = info["framework"]["name"]
+          end
+
+          app = File.expand_path(path, mandir)
+          File.expand_path(path, mandir) == full_path
+        end
+      elsif find_path == "."
+        [".", {}]
       end
 
-      app = File.expand_path(path, File.dirname(manifest_file))
-      if find_path == app
-        return toplevel_attributes.merge info
+    return unless info
+
+    data = { :path => full_path }
+
+    toplevel_attributes.merge(info).each do |k, v|
+      name = k.to_sym
+
+      if name == :mem
+        name = :memory
       end
+
+      data[name] = input && input.given(name) || v
     end
 
-    nil
+    data
   end
 
   # call a block for each app in a manifest (in dependency order), setting
   # inputs for each app
-  def each_app
-    given_path = passed_value(:path)
-    full_path = given_path && File.expand_path(given_path)
-
+  def each_app(input = nil, &blk)
     if manifest and all_apps = manifest["applications"]
       use_inputs = all_apps.size == 1
 
-      # given a specific application
-      if given_path
-        if info = app_info(full_path)
-          with_app(full_path, info, use_inputs) do
-            yield info
-          end
-        else
-          raise "Path #{given_path} is not described by the manifest."
-        end
-      else
-        # all apps in the manifest
-        ordered_by_deps(all_apps).each do |path|
-          app = File.expand_path(path, File.dirname(manifest_file))
-          info = app_info(app)
-
-          with_app(app, info, use_inputs) do
-            yield info
-          end
-        end
+      ordered_by_deps(all_apps).each do |path|
+        yield app_info(path, use_inputs && input)
       end
 
       true
-    
+
     # manually created or legacy single-app manifest
     elsif single = toplevel_attributes
-      with_app(full_path || ".", single, true) do
-        yield single
-      end
+      yield app_info(".", input)
 
       true
 
@@ -250,23 +248,55 @@ module VMCManifests
     end
   end
 
-  private
+  # like each_app, but only acts on apps specified as paths instead of names
+  #
+  # returns the names that were not paths
+  def specific_apps_or_all(input = nil, use_name = true, &blk)
+    return false unless manifest && apps = manifest["applications"]
 
-  # call the block as if the app info and path were given as flags
-  def with_app(path, info, use_inputs = false, &blk)
-    inputs = {:path => path}
-    info.each do |k, v|
-      input = k.to_sym
+    use_name = false if apps.size > 1
 
-      if input == :mem
-        input = :memory
+    names_or_paths =
+      if input.given?(:names)
+        input[:names]
+      elsif input.given?(:name)
+        [input[:name]]
+      else
+        []
       end
 
-      inputs[input] = use_inputs && passed_value(input) || v
+    return each_app(input, &blk) if names_or_paths.empty?
+
+    input = input.without(:name, :names)
+
+    paths = []
+    names = []
+    names_or_paths.each do |x|
+      path = File.expand_path(x)
+
+      if File.exists?(path)
+        paths << path
+      else
+        names << x
+      end
     end
 
-    with_inputs(inputs, &blk)
+    paths.each do |path|
+      blk.call app_info(path, input)
+    end
+
+    if use_name && names.size == 1
+      blk.call(
+        app_info(
+          manifest["applications"].keys.first,
+          input.merge(:name => names.first)))
+    end
+
+    names
   end
+
+
+  private
 
   # sort applications in dependency order
   # e.g. if A depends on B, B will be listed before A
@@ -313,18 +343,18 @@ module VMCManifests
   # redeploys the app if necessary (after prompting the user), e.g. for
   # runtime/framework change
   def sync_changes(info)
-    app = client.app(info["name"])
+    app = client.app(info[:name])
     return unless app.exists?
 
     diff = {}
     need_restage = []
     info.each do |k, v|
-      case k
+      case k.to_s
       when /ur[li]s?/
         old = app.urls
         new = Array(v)
         if old != new
-          diff["urls"] = [old.inspect, new.inspect]
+          diff[:urls] = [old.inspect, new.inspect]
           app.urls = new
         end
       when "env"
@@ -351,7 +381,7 @@ module VMCManifests
         new = megabytes(v)
 
         if old != new
-          diff["memory"] = [human_size(old * 1024 * 1024, 0), v]
+          diff[:memory] = [human_size(old * 1024 * 1024, 0), v]
           app.memory = new
         end
       end
@@ -359,7 +389,7 @@ module VMCManifests
 
     return if diff.empty?
 
-    unless simple_output?
+    unless quiet?
       puts "Detected the following changes to #{c(app.name, :name)}:"
       diff.each do |k, d|
         old, new = d
@@ -375,7 +405,7 @@ module VMCManifests
         app.update!
       end
     else
-      unless simple_output?
+      unless quiet?
         puts "The following changes require the app to be recreated:"
         need_restage.each do |n|
           puts "  #{c(n, :error)}"
@@ -395,7 +425,7 @@ module VMCManifests
     end
   end
 
-  def ask_to_save(app)
+  def ask_to_save(input, app)
     return if manifest_file
 
     services = app.services.collect { |name| client.service(name) }
@@ -427,7 +457,7 @@ module VMCManifests
     if ask("Save configuration?", :default => false)
       File.open("manifest.yml", "w") do |io|
         YAML.dump(
-          {"applications" => {(options[:path] || ".") => meta}},
+          {"applications" => {(input[:path] || ".") => meta}},
           io)
       end
 
@@ -436,13 +466,13 @@ module VMCManifests
   end
 
   def setup_app(app, info)
-    app.env = info["env"]
+    app.env = info[:env]
 
-    return if !info["services"] || info["services"].empty?
+    return if !info[:services] || info[:services].empty?
 
     services = client.system_services
 
-    info["services"].each do |name, svc|
+    info[:services].each do |name, svc|
       service = client.service(name)
 
       unless service.exists?
@@ -460,6 +490,6 @@ module VMCManifests
       end
     end
 
-    app.services = info["services"].keys
+    app.services = info[:services].keys
   end
 end
