@@ -5,7 +5,8 @@ require "manifests-vmc-plugin"
 class Manifests < VMC::CLI
   include VMCManifests
 
-  option :manifest, :aliases => "-m", :desc => "Manifest file"
+  option :manifest, :aliases => "-m", :value => :file,
+    :desc => "Path to manifest file to use"
 
 
   def no_apps
