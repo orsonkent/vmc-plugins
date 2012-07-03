@@ -41,10 +41,27 @@ module VMCManifests
     @manifest_file
   end
 
+  # convert any deprecated structuring to the modern format
+  def simplify_info(info)
+    if info["framework"].is_a?(Hash)
+      info["framework"] = info["framework"]["name"]
+    end
+  end
+
   # load and resolve a given manifest file
   def load_manifest(file)
     manifest = build_manifest(file)
     resolve_manifest(manifest)
+
+    # single-app manifest
+    simplify_info(manifest)
+
+    if apps = manifest["applications"]
+      apps.each do |path, info|
+        simplify_info(info)
+      end
+    end
+
     manifest
   end
 
@@ -180,37 +197,43 @@ module VMCManifests
           MANIFEST_META.include? k
         end
 
-      if info["framework"].is_a?(Hash)
-        info["framework"] = info["framework"]["name"]
-      end
-
       info
     end
   end
 
-  def app_info(find_path, input = nil)
+  def app_by_name(name, input = nil)
     return unless manifest
 
-    mandir = File.dirname(manifest_file)
-    full_path = File.expand_path(find_path, mandir)
-
-    path, info =
-      if apps = manifest["applications"]
-        manifest["applications"].find do |path, info|
-          if info["framework"].is_a?(Hash)
-            info["framework"] = info["framework"]["name"]
-          end
-
-          app = File.expand_path(path, mandir)
-          File.expand_path(path, mandir) == full_path
-        end
-      elsif find_path == "."
-        [".", {}]
+    if apps = manifest["applications"]
+      manifest["applications"].find do |path, info|
+        info["name"] == name
       end
+    elsif name == manifest["name"]
+      [".", toplevel_attributes]
+    end
+  end
 
+  def app_by_path(find_path)
+    return unless manifest
+
+    if apps = manifest["applications"]
+      mandir = File.dirname(manifest_file)
+      full_path = File.expand_path(find_path, mandir)
+
+      manifest["applications"].find do |path, info|
+        File.expand_path(path, mandir) == full_path
+      end
+    elsif find_path == "."
+      [".", toplevel_attributes]
+    end
+  end
+
+  def app_info(path_or_name, input = nil)
+    path, info = app_by_name(path_or_name) || app_by_path(path_or_name)
     return unless info
 
-    data = { :path => full_path }
+    abspath = File.expand_path(path, File.dirname(manifest_file))
+    data = { :path => abspath }
 
     toplevel_attributes.merge(info).each do |k, v|
       name = k.to_sym
@@ -248,51 +271,58 @@ module VMCManifests
     end
   end
 
+
+  def no_apps
+    fail "No applications or manifest to operate on."
+  end
+
   # like each_app, but only acts on apps specified as paths instead of names
   #
   # returns the names that were not paths
   def specific_apps_or_all(input = nil, use_name = true, &blk)
-    return false unless manifest && apps = manifest["applications"]
-
-    use_name = false if apps.size > 1
-
     names_or_paths =
       if input.given?(:names)
-        input[:names]
+        # names may be given but be [], which will still cause
+        # interaction, so use #given instead of #[] here
+        input.given(:names)
       elsif input.given?(:name)
         [input[:name]]
       else
         []
       end
 
-    return each_app(input, &blk) if names_or_paths.empty?
-
-    input = input.without(:name, :names)
-
-    paths = []
-    names = []
-    names_or_paths.each do |x|
-      path = File.expand_path(x)
-
-      if File.exists?(path)
-        paths << path
+    unless manifest
+      if names_or_paths.empty?
+        return false
       else
-        names << x
+        return names_or_paths
       end
     end
 
-    paths.each do |path|
-      blk.call app_info(path, input)
+    if names_or_paths.empty?
+      each_app(input, &blk)
+      return []
     end
 
-    if use_name && names.size == 1
-      blk.call(
-        app_info(
-          manifest["applications"].keys.first,
-          input.merge(:name => names.first)))
+    input = input.without(:name, :names)
+
+    in_manifest = []
+    external = []
+    names_or_paths.each do |x|
+      path = File.expand_path(x)
+
+      if app = app_info(File.exists?(path) ? path : x, input)
+        in_manifest << app
+      else
+        external << x
+      end
     end
 
-    names
+    in_manifest.each do |app|
+      blk.call app
+    end
+
+    external
   end
 
 

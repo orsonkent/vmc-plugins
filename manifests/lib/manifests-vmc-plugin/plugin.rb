@@ -10,7 +10,7 @@ class Manifests < VMC::CLI
 
 
   def no_apps
-    err "No applications or manifest to operate on."
+    fail "No applications or manifest to operate on."
   end
 
 
@@ -19,21 +19,22 @@ class Manifests < VMC::CLI
   [ :start, :instances, :logs, :file, :files, :env,
     :health, :stats, :scale
   ].each do |wrap|
-    change_argument(wrap, :name, :optional)
+    optional_name = change_argument(wrap, :name, :optional)
 
     around(wrap) do |cmd, input|
-      use_manifest =
+      rest =
         specific_apps_or_all(input) do |app|
-          cmd.call(input.merge(:name => app[:name]))
+          cmd.call(input.without(:names).merge(:name => app[:name]))
           puts "" unless quiet?
         end
 
-      # array of unhandled names
-      if use_manifest === Array
-        cmd.call(input.merge(:names => use_manifest))
+      if rest
+        rest.each do |n|
+          cmd.call(input.merge(:name => n))
+        end
 
-      # no manifest or no apps described by it
-      elsif !use_manifest
+      # fail manually for commands whose name we made optional
+      elsif optional_name
         no_apps
       end
     end
@@ -46,48 +47,54 @@ class Manifests < VMC::CLI
       next cmd.call if input[:all]
 
       reversed = []
-      use_manifest =
+      rest =
         specific_apps_or_all(input) do |app|
           reversed.unshift app[:name]
         end
 
-      # array of unhandled names
-      if use_manifest === Array
-        cmd.call(input.merge(:names => use_manifest))
-
-      # no manifest or no apps described by it
-      elsif !use_manifest
-        next no_apps
+      unless reversed.empty?
+        cmd.call(input.merge(:names => reversed))
       end
 
-      cmd.call(input.merge(:names => reversed))
+      if rest
+        cmd.call(input.merge(:names => rest)) unless rest.empty?
+      else
+        cmd.call(input.without(:names))
+      end
     end
   end
 
 
   # push and sync meta changes in the manifest
   # also sets env data on creation if present in manifest
+  #
+  # vmc push [name in manifest] = push that app from its path
+  # vmc push [name not in manifest] = push new app using given name
+  # vmc push [path] = push app from its path
   change_argument(:push, :name, :optional)
   around(:push) do |push, input|
-    use_manifest =
-      specific_apps_or_all(input, true) do |app|
-        sync_changes(app)
+    app =
+      if input.given?(:name)
+        path = File.expand_path(input[:name])
+        find_by = File.exists?(path) ? path : input[:name]
 
-        with_filters(
-            :push => {
-              :push_app =>
-                proc { |a| setup_app(a, app); a }
-            }) do
-          push.call(
-            input.merge(app).merge(
-              :bind_services => false,
-              :create_services => false))
-        end
+        app_info(find_by, input.without(:name))
       end
 
-    unless use_manifest
-      bound = []
+    app ||= app_info(".", input)
 
+    if app
+      sync_changes(app)
+
+      with_filters(
+          :push => {
+            :push_app => proc { |a| setup_app(a, app); a }
+          }) do
+        push.call(input.merge(app).merge(
+          :bind_services => false,
+          :create_services => false))
+      end
+    else
       with_filters(
           :push => {
             :push_app =>
