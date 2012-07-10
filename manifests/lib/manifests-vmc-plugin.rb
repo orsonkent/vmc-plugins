@@ -485,9 +485,16 @@ module VMCManifests
     end
 
     if ask("Save configuration?", :default => false)
+      if input[:path] =~ /\.[[:alnum:]]+$/
+        root = ask("Application root", :default => ".")
+        meta["path"] = input[:path]
+      else
+        root = input[:path]
+      end
+
       File.open("manifest.yml", "w") do |io|
         YAML.dump(
-          {"applications" => {(input[:path] || ".") => meta}},
+          { "applications" => { root => meta } },
           io)
       end
 
