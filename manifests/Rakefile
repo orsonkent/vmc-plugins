@@ -1,1 +1,47 @@
-require "bundler/gem_tasks"
+require "rake"
+
+$LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
+require "manifests-vmc-plugin/version"
+
+task :default => :spec
+
+desc "Run specs"
+task :spec => ["bundler:install", "test:spec"]
+
+desc "Run integration tests"
+task :test => ["bundler:install", "test:integration"]
+
+task :build do
+  sh "gem build manifests-vmc-plugin.gemspec"
+end
+
+task :install => :build do
+  sh "gem install --local manifests-vmc-plugin-#{VMCManifests::VERSION}"
+end
+
+task :uninstall do
+  sh "gem uninstall manifests-vmc-plugin"
+end
+
+task :reinstall => [:uninstall, :install]
+
+task :release => :build do
+  sh "gem push manifests-vmc-plugin-#{VMCManifests::VERSION}.gem"
+end
+
+namespace "bundler" do
+  desc "Install gems"
+  task "install" do
+    sh("bundle install")
+  end
+end
+
+namespace "test" do
+  task "spec" do |t|
+    # nothing
+  end
+
+  task "integration" do |t|
+    sh("cd spec && bundle exec rake spec")
+  end
+end
