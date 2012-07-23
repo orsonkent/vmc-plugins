@@ -281,12 +281,12 @@ module VMCManifests
   # returns the names that were not paths
   def specific_apps_or_all(input = nil, use_name = true, &blk)
     names_or_paths =
-      if input.given?(:names)
+      if input.given?(:apps)
         # names may be given but be [], which will still cause
         # interaction, so use #given instead of #[] here
-        input.given(:names)
-      elsif input.given?(:name)
-        [input[:name]]
+        input.given(:apps)
+      elsif input.given?(:app)
+        [input[:app]]
       else
         []
       end
@@ -304,7 +304,7 @@ module VMCManifests
       return []
     end
 
-    input = input.without(:name, :names)
+    input = input.without(:app, :apps)
 
     in_manifest = []
     external = []
@@ -373,8 +373,8 @@ module VMCManifests
   # redeploys the app if necessary (after prompting the user), e.g. for
   # runtime/framework change
   def sync_changes(info)
-    app = client.app(info[:name])
-    return unless app.exists?
+    app = client.app_by_name(info[:name])
+    return unless app
 
     diff = {}
     need_restage = []
@@ -393,8 +393,19 @@ module VMCManifests
           diff[k] = [old.inspect, v.inspect]
           app.env = v
         end
-      when "framework", "runtime", "command"
+      when "framework", "runtime"
         old = app.send(k)
+        new = client.send("#{k}s").find do |x|
+          x.name == v
+        end
+
+        if old != new
+          diff[k] = [old.name, new.name]
+          app.send(:"#{k}=", new)
+          need_restage << k
+        end
+      when "command"
+        old = app.command
         if old != v
           diff[k] = [old, v]
           app.send(:"#{k}=", v)
@@ -444,12 +455,15 @@ module VMCManifests
       end
 
       if force? || ask("Redeploy?", :default => false)
+        bindings = app.services
+
         with_progress("Deleting #{c(app.name, :name)}") do
           app.delete!
         end
 
         with_progress("Recreating #{c(app.name, :name)}") do
           app.create!
+          app.bind(*bindings)
         end
       end
     end
@@ -458,24 +472,29 @@ module VMCManifests
   def ask_to_save(input, app)
     return if manifest_file
 
-    services = app.services.collect { |name| client.service(name) }
+    service_instances = app.services
 
     meta = {
       "name" => app.name,
-      "framework" => app.framework,
-      "runtime" => app.runtime,
+      "framework" => app.framework.name,
+      "runtime" => app.runtime.name,
       "memory" => human_size(app.memory, 0),
       "instances" => app.total_instances,
       "url" => app.url
     }
 
-    unless services.empty?
+    unless service_instances.empty?
       meta["services"] = {}
 
-      services.each do |s|
-        meta["services"][s.name] = {
-          "vendor" => s.vendor,
-          "version" => s.version
+      service_instances.each do |i|
+        p = i.service_plan
+        s = p.service
+
+        meta["services"][i.name] = {
+          "label" => s.label,
+          "provider" => s.provider,
+          "version" => s.version,
+          "plan" => p.name
         }
       end
     end
@@ -502,31 +521,91 @@ module VMCManifests
     end
   end
 
-  def setup_app(app, info)
-    app.env = info[:env]
+  def env_hash(val)
+    if val.is_a?(Hash)
+      val
+    else
+      hash = {}
 
+      val.each do |pair|
+        name, val = pair.split("=", 2)
+        hash[name] = val
+      end
+
+      hash
+    end
+  end
+
+  def setup_env(app, info)
+    return unless info[:env]
+    app.env = env_hash(info[:env])
+  end
+
+  def setup_services(app, info)
     return if !info[:services] || info[:services].empty?
 
-    services = client.system_services
+    services = client.services
+
+    to_bind = []
 
     info[:services].each do |name, svc|
-      service = client.service(name)
+      if instance = client.service_instance_by_name(name)
+        to_bind << instance
+      else
+        service = services.find { |s|
+          s.label == (svc["label"] || svc["type"] || svc["vendor"]) &&
+            (!svc["version"] || s.version == svc["version"]) &&
+            (s.provider == (svc["provider"] || "core"))
+        }
 
-      unless service.exists?
-        service.vendor = svc["vendor"] || svc["type"]
+        fail "Unknown service." unless service
 
-        service_meta = services[service.vendor]
+        plan = service.service_plans.find { |p|
+          p.name == svc["plan"] || "D100"
+        }
 
-        service.type = service_meta[:type]
-        service.version = svc["version"] || service_meta[:versions].first
-        service.tier = "free"
+        fail "Unknown service plan." unless plan
 
-        with_progress("Creating service #{c(service.name, :name)}") do
-          service.create!
-        end
+        invoke :create_service,
+          :name => name,
+          :service => service,
+          :plan => plan,
+          :app => app
       end
     end
 
-    app.services = info[:services].keys
+    to_bind.each do |i|
+      # TODO: splat
+      invoke :bind_service,
+        :app => app,
+        :instance => i
+    end
+  end
+
+  def megabytes(str)
+    if str =~ /T$/i
+      str.to_i * 1024 * 1024
+    elsif str =~ /G$/i
+      str.to_i * 1024
+    elsif str =~ /M$/i
+      str.to_i
+    elsif str =~ /K$/i
+      str.to_i / 1024
+    else # assume megabytes
+      str.to_i
+    end
+  end
+
+  def human_size(num, precision = 1)
+    sizes = ["G", "M", "K"]
+    sizes.each.with_index do |suf, i|
+      pow = sizes.size - i
+      unit = 1024 ** pow
+      if num >= unit
+        return format("%.#{precision}f%s", num / unit, suf)
+      end
+    end
+
+    format("%.#{precision}fB", num)
   end
 end

@@ -19,18 +19,20 @@ class Manifests < VMC::CLI
   [ :start, :instances, :logs, :file, :files, :env,
     :health, :stats, :scale
   ].each do |wrap|
-    optional_name = change_argument(wrap, :name, :optional)
+    optional_name = change_argument(wrap, :app, :optional)
 
     around(wrap) do |cmd, input|
+      num = 0
       rest =
-        specific_apps_or_all(input) do |app|
-          cmd.call(input.without(:names).merge(:name => app[:name]))
-          puts "" unless quiet?
+        specific_apps_or_all(input) do |info|
+          puts "" unless quiet? || num == 0
+          cmd.call(input.without(:apps).merge_given(:app => info[:name]))
+          num += 1
         end
 
       if rest
-        rest.each do |n|
-          cmd.call(input.merge(:name => n))
+        rest.each do |name|
+          cmd.call(input.without(:apps).merge_given(:app => name))
         end
 
       # fail manually for commands whose name we made optional
@@ -48,18 +50,20 @@ class Manifests < VMC::CLI
 
       reversed = []
       rest =
-        specific_apps_or_all(input) do |app|
-          reversed.unshift app[:name]
+        specific_apps_or_all(input) do |info|
+          reversed.unshift info[:name]
         end
 
       unless reversed.empty?
-        cmd.call(input.merge(:names => reversed))
+        cmd.call(input.without(:apps).merge_given(:apps => reversed))
       end
 
       if rest
-        cmd.call(input.merge(:names => rest)) unless rest.empty?
+        unless rest.empty?
+          cmd.call(input.without(:apps).merge_given(:apps => rest))
+        end
       else
-        cmd.call(input.without(:names))
+        cmd.call(input.without(:apps))
       end
     end
   end
@@ -88,9 +92,16 @@ class Manifests < VMC::CLI
 
       with_filters(
           :push => {
-            :push_app => proc { |a| setup_app(a, app); a }
+            :create_app => proc { |a|
+              setup_env(a, app)
+              a
+            },
+            :push_app => proc { |a|
+              setup_services(a, app)
+              a
+            }
           }) do
-        push.call(input.merge(app).merge(
+        push.call(input.merge_given(app).merge(
           :bind_services => false,
           :create_services => false))
       end
