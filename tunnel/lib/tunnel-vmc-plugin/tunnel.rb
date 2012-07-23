@@ -1,4 +1,5 @@
 require "addressable/uri"
+require "restclient"
 
 require "caldecott"
 
