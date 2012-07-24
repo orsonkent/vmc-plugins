@@ -17,7 +17,7 @@ class Manifests < VMC::CLI
   # basic commands that, when given no name, act on the
   # app(s) described by the manifest, in dependency-order
   [ :start, :restart, :instances, :logs, :file, :files, :env,
-    :health, :stats, :scale
+    :health, :stats, :scale, :app
   ].each do |wrap|
     optional_name = change_argument(wrap, :app, :optional)
 
