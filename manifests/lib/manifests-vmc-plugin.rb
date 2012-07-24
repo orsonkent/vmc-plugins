@@ -291,14 +291,6 @@ module VMCManifests
         []
       end
 
-    unless manifest
-      if names_or_paths.empty?
-        return false
-      else
-        return names_or_paths
-      end
-    end
-
     if names_or_paths.empty?
       each_app(input, &blk)
       return []
