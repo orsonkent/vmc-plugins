@@ -309,10 +309,16 @@ module VMCManifests
     in_manifest = []
     external = []
     names_or_paths.each do |x|
-      path = File.expand_path(x)
+      if x.is_a?(String)
+        path = File.expand_path(x)
 
-      if app = app_info(File.exists?(path) ? path : x, input)
-        in_manifest << app
+        if app = app_info(File.exists?(path) ? path : x, input)
+          in_manifest << app
+        elsif app = client.app_by_name(x)
+          external << app
+        else
+          fail("Unknown app '#{x}'")
+        end
       else
         external << x
       end
