@@ -22,6 +22,14 @@ class Manifests < VMC::CLI
     optional_name = change_argument(wrap, :app, :optional)
 
     around(wrap) do |cmd, input|
+      unless manifest
+        if optional_name && !input.given?(:app)
+          no_apps
+        else
+          next cmd.call
+        end
+      end
+
       num = 0
       rest =
         specific_apps_or_all(input) do |info|
@@ -46,7 +54,7 @@ class Manifests < VMC::CLI
   # same as above but in reverse dependency-order
   [:stop, :delete].each do |wrap|
     around(wrap) do |cmd, input|
-      next cmd.call if input[:all]
+      next cmd.call if input[:all] || !manifest
 
       reversed = []
       rest =
@@ -58,12 +66,8 @@ class Manifests < VMC::CLI
         cmd.call(input.without(:apps).merge_given(:apps => reversed))
       end
 
-      if rest
-        unless rest.empty?
-          cmd.call(input.without(:apps).merge(:apps => rest))
-        end
-      else
-        cmd.call(input.without(:apps))
+      unless rest.empty?
+        cmd.call(input.without(:apps).merge(:apps => rest))
       end
     end
   end
