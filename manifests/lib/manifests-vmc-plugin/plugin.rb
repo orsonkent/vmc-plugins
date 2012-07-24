@@ -16,7 +16,7 @@ class Manifests < VMC::CLI
 
   # basic commands that, when given no name, act on the
   # app(s) described by the manifest, in dependency-order
-  [ :start, :instances, :logs, :file, :files, :env,
+  [ :start, :restart, :instances, :logs, :file, :files, :env,
     :health, :stats, :scale
   ].each do |wrap|
     optional_name = change_argument(wrap, :app, :optional)
@@ -32,7 +32,7 @@ class Manifests < VMC::CLI
 
       if rest
         rest.each do |name|
-          cmd.call(input.without(:apps).merge_given(:app => name))
+          cmd.call(input.without(:apps).merge(:app => name))
         end
 
       # fail manually for commands whose name we made optional
@@ -60,7 +60,7 @@ class Manifests < VMC::CLI
 
       if rest
         unless rest.empty?
-          cmd.call(input.without(:apps).merge_given(:apps => rest))
+          cmd.call(input.without(:apps).merge(:apps => rest))
         end
       else
         cmd.call(input.without(:apps))
