@@ -556,13 +556,15 @@ module VMCManifests
             (s.provider == (svc["provider"] || "core"))
         }
 
-        fail "Unknown service." unless service
+        fail "Unknown service: #{svc.inspect}." unless service
 
-        plan = service.service_plans.find { |p|
-          p.name == svc["plan"] || "D100"
-        }
+        if v2?
+          plan = service.service_plans.find { |p|
+            p.name == svc["plan"] || "D100"
+          }
 
-        fail "Unknown service plan." unless plan
+          fail "Unknown service plan: #{svc["plan"]}." unless plan
+        end
 
         invoke :create_service,
           :name => name,
