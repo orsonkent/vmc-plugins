@@ -16,7 +16,7 @@ task :build do
 end
 
 task :install => :build do
-  sh "gem install --local manifests-vmc-plugin-#{VMCManifests::VERSION}"
+  sh "gem install --local manifests-vmc-plugin-#{VMCManifests::VERSION}.gem"
 end
 
 task :uninstall do
