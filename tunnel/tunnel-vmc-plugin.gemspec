@@ -19,6 +19,8 @@ Gem::Specification.new do |s|
   s.test_files    = Dir.glob("spec/**/*")
   s.require_paths = ["lib"]
 
+  s.add_runtime_dependency "cfoundry", "~> 0.3.18"
+
   s.add_runtime_dependency "addressable", "~> 2.2.6"
   s.add_runtime_dependency "eventmachine", "~> 1.0.0.beta"
   s.add_runtime_dependency "caldecott", "~> 0.0.5"

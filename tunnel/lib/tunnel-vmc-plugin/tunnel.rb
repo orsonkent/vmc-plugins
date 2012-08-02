@@ -90,12 +90,7 @@ class CFTunnel
   end
 
   def helper_auth
-    helper.env.each do |e|
-      name, val = e.split("=", 2)
-      return val if name == "CALDECOTT_AUTH"
-    end
-
-    nil
+    helper.env["CALDECOTT_AUTH"]
   end
 
   def helper_healthy?(token)
@@ -121,7 +116,7 @@ class CFTunnel
   end
 
   def helper_already_binds?
-    helper.services.include? @service.name
+    helper.binds? @service
   end
 
   def push_helper(token)
@@ -132,8 +127,8 @@ class CFTunnel
     app.url = "#{random_helper_url}.#{target_base}"
     app.total_instances = 1
     app.memory = 64
-    app.env = ["CALDECOTT_AUTH=#{token}"]
-    app.services = [@service.name] if @service
+    app.env = { "CALDECOTT_AUTH" => token }
+    app.services = [@service] if @service
     app.create!
 
     begin
@@ -172,7 +167,7 @@ class CFTunnel
   end
 
   def bind_to_helper
-    helper.bind(@service.name)
+    helper.bind(@service)
     helper.restart!
   end
 
@@ -214,7 +209,6 @@ class CFTunnel
 
         break
       rescue RestClient::Exception => e
-        p [e, e.to_s]
         sleep 1
       end
     end
@@ -287,118 +281,5 @@ class CFTunnel
     socket.addr[1]
   ensure
     socket.close
-  end
-end
-
-module VMCTunnel
-  CLIENTS_FILE = "#{VMC::CONFIG_DIR}/tunnel-clients.yml"
-  STOCK_CLIENTS = File.expand_path("../../../config/clients.yml", __FILE__)
-
-  def display_tunnel_connection_info(info)
-    puts "Service connection info:"
-
-    to_show = [nil, nil, nil] # reserved for user, pass, db name
-    info.keys.each do |k|
-      case k
-      when "host", "hostname", "port", "node_id"
-        # skip
-      when "user", "username"
-        # prefer "username" over "user"
-        to_show[0] = k unless to_show[0] == "username"
-      when "password"
-        to_show[1] = k
-      when "name"
-        to_show[2] = k
-      else
-        to_show << k
-      end
-    end
-    to_show.compact!
-
-    align_len = to_show.collect(&:size).max + 1
-
-    to_show.each do |k|
-      # TODO: modify the server services rest call to have explicit knowledge
-      # about the items to return.  It should return all of them if
-      # the service is unknown so that we don't have to do this weird
-      # filtering.
-      print "  #{k.ljust align_len}: #{b(info[k])}"
-    end
-
-    puts ""
-  end
-
-  def start_local_prog(clients, command, info, port)
-    client = clients[File.basename(command)]
-
-    cmdline = "#{command} "
-
-    case client
-    when Hash
-      cmdline << resolve_symbols(client["command"], info, port)
-      client["environment"].each do |e|
-        if e =~ /([^=]+)=(["']?)([^"']*)\2/
-          ENV[$1] = resolve_symbols($3, info, port)
-        else
-          raise "Invalid environment variable: #{e}"
-        end
-      end
-    when String
-      cmdline << resolve_symbols(client, info, port)
-    else
-      raise "Unknown client info: #{client.inspect}."
-    end
-
-    if verbose?
-      puts ""
-      puts "Launching '#{cmdline}'"
-    end
-
-    system(cmdline)
-  end
-
-  def tunnel_clients
-    return @tunnel_clients if @tunnel_clients
-
-    stock = YAML.load_file(STOCK_CLIENTS)
-    clients = File.expand_path CLIENTS_FILE
-    if File.exists? clients
-      user = YAML.load_file(clients)
-      @tunnel_clients = deep_merge(stock, user)
-    else
-      @tunnel_clients = stock
-    end
-  end
-
-  def resolve_symbols(str, info, local_port)
-    str.gsub(/\$\{\s*([^\}]+)\s*\}/) do
-      sym = $1
-
-      case sym
-      when "host"
-        # TODO: determine proper host
-        "localhost"
-      when "port"
-        local_port
-      when "user", "username"
-        info["username"]
-      when /^ask (.+)/
-        ask($1)
-      else
-        info[sym] || raise("Unknown symbol in config: #{sym}")
-      end
-    end
-  end
-
-  def deep_merge(a, b)
-    merge = proc { |old, new|
-      if old === Hash && new === Hash
-        old.merge(new, &merge)
-      else
-        new
-      end
-    }
-
-    a.merge(b, &merge)
   end
 end
