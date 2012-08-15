@@ -393,9 +393,7 @@ module VMCManifests
         end
       when "framework", "runtime"
         old = app.send(k)
-        new = client.send("#{k}s").find do |x|
-          x.name == v
-        end
+        new = client.send(:"#{k}_by_name", v)
 
         if old != new
           diff[k] = [old.name, new.name]
