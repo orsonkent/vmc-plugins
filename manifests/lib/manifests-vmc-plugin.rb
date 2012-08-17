@@ -483,15 +483,23 @@ module VMCManifests
       meta["services"] = {}
 
       service_instances.each do |i|
-        p = i.service_plan
-        s = p.service
+        if v2?
+          p = i.service_plan
+          s = p.service
 
-        meta["services"][i.name] = {
-          "label" => s.label,
-          "provider" => s.provider,
-          "version" => s.version,
-          "plan" => p.name
-        }
+          meta["services"][i.name] = {
+            "label" => s.label,
+            "provider" => s.provider,
+            "version" => s.version,
+            "plan" => p.name
+          }
+        else
+          meta["services"][i.name] = {
+            "vendor" => i.vendor,
+            "version" => i.version,
+            "tier" => i.tier
+          }
+        end
       end
     end
 
