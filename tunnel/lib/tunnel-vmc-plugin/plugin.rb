@@ -41,7 +41,7 @@ module VMCTunnel
         end
 
       if client_name == "none"
-        unless simple_output?
+        unless quiet?
           line
           display_tunnel_connection_info(conn_info)
 
