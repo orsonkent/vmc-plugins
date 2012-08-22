@@ -24,7 +24,7 @@ module VMCTunnel
       end
     }
     input(:port, :default => 10000, :desc => "Port to bind the tunnel to")
-    def tunnel(input)
+    def tunnel
       instances = client.service_instances
       fail "No services available for tunneling." if instances.empty?
 

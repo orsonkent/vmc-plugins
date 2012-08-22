@@ -22,7 +22,7 @@ module VMCManifests
 
   # find the manifest file to work with
   def manifest_file
-    return option(:manifest) if option(:manifest)
+    return input[:manifest] if input[:manifest]
     return @manifest_file if @manifest_file
 
     where = Dir.pwd
