@@ -237,6 +237,9 @@ class CFTunnel
     # our "name" is irrelevant for redis
     when "redis"
       info.delete "name"
+
+    when "filesystem"
+      raise "Tunneling is not supported for this type of service"
     end
 
     ["hostname", "port", "password"].each do |k|
