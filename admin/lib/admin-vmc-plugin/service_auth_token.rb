@@ -4,7 +4,7 @@ module VMCAdmin
   class ServiceAuthToken < VMC::CLI
     desc "List service auth tokens"
     group :admin
-    def service_auth_tokens(input)
+    def service_auth_tokens
       spaced(client.service_auth_tokens) do |t|
         line "#{c(t.label, :name)}:"
 
@@ -26,7 +26,7 @@ module VMCAdmin
     input(:token, :desc => "Auth token value") {
       ask("Token")
     }
-    def create_service_auth_token(input)
+    def create_service_auth_token
       sat = client.service_auth_token
       sat.label = input[:label]
       sat.provider = input[:provider]
@@ -51,7 +51,7 @@ module VMCAdmin
     input(:token, :desc => "Auth token value") {
       ask("Token")
     }
-    def update_service_auth_token(input)
+    def update_service_auth_token
       sat = input[:service_auth_token]
       sat.token = input[:token]
 
@@ -71,7 +71,7 @@ module VMCAdmin
 
       ask("Which token?", :choices => tokens, :display => proc(&:label))
     }
-    def delete_service_auth_token(input)
+    def delete_service_auth_token
       sat = input[:service_auth_token]
 
       with_progress("Deleting token #{c(sat.label, :name)}") do
