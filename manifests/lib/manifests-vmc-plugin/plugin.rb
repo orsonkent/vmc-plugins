@@ -79,7 +79,11 @@ class Manifests < VMC::CLI
   # vmc push [name in manifest] = push that app from its path
   # vmc push [name not in manifest] = push new app using given name
   # vmc push [path] = push app from its path
-  change_argument(:push, :name, :optional)
+  change_argument :push, :name, :optional
+
+  add_input :push, :reset, :type => :boolean, :default => false,
+    :desc => "Reset to values in the manifest"
+
   around(:push) do |push, input|
     app =
       if input.given?(:name)
@@ -92,8 +96,6 @@ class Manifests < VMC::CLI
     app ||= app_info(".", input)
 
     if app
-      sync_changes(app)
-
       with_filters(
           :push => {
             :create_app => proc { |a|
@@ -105,7 +107,13 @@ class Manifests < VMC::CLI
               a
             }
           }) do
-        push.call(input.merge_given(app).merge(
+        # only set inputs if creating app or updating with --reset
+        if input[:reset] || !client.app_by_name(app[:name])
+          input = input.merge_given(app)
+        end
+
+        push.call(input.merge(
+          :name => app[:name],
           :bind_services => false,
           :create_services => false))
       end
