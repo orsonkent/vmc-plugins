@@ -381,7 +381,7 @@ module VMCManifests
       "runtime" => app.runtime.name,
       "memory" => human_size(app.memory * 1024 * 1024, 0),
       "instances" => app.total_instances,
-      "url" => app.url.sub(target_base, '${target-base}')
+      "url" => app.url && app.url.sub(target_base, '${target-base}')
     }
 
     unless service_instances.empty?
