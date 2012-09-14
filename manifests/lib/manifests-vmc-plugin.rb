@@ -135,7 +135,7 @@ module VMCManifests
       target_url(ctx)
 
     when "target-base"
-      target_url(ctx).sub(/^[^\.]+\./, "")
+      target_base(ctx)
 
     when "random-word"
       "%04x" % [rand(0x0100000)]
@@ -158,6 +158,10 @@ module VMCManifests
   # get the target url from either the manifest or the current client
   def target_url(ctx = [])
     find_symbol("target", ctx) || client_target
+  end
+
+  def target_base(ctx = [])
+    target_url(ctx).sub(/^[^\.]+\./, "")
   end
 
   # search for a symbol introduced in the lexical context
@@ -377,7 +381,7 @@ module VMCManifests
       "runtime" => app.runtime.name,
       "memory" => human_size(app.memory * 1024 * 1024, 0),
       "instances" => app.total_instances,
-      "url" => app.url
+      "url" => app.url.sub(target_base, '${target-base}')
     }
 
     unless service_instances.empty?
