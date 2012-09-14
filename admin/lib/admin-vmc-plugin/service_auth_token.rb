@@ -2,6 +2,17 @@ require "vmc/cli"
 
 module VMCAdmin
   class ServiceAuthToken < VMC::CLI
+    def precondition
+      unless File.exists? target_file
+        fail "Please select a target with 'vmc target'."
+      end
+
+      unless client.logged_in?
+        fail "Please log in with 'vmc login'."
+      end
+    end
+
+
     desc "List service auth tokens"
     group :admin
     def service_auth_tokens
