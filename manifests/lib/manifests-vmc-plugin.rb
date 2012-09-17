@@ -420,13 +420,13 @@ module VMCManifests
         root = input[:path]
       end
 
-      File.open("manifest.yml", "w") do |io|
-        YAML.dump(
-          { "applications" => { root => meta } },
-          io)
+      with_progress("Saving to #{c("manifest.yml", :name)}") do
+        File.open("manifest.yml", "w") do |io|
+          YAML.dump(
+            { "applications" => { root => meta } },
+            io)
+        end
       end
-
-      puts "Saved to #{c("manifest.yml", :name)}."
     end
   end
 
