@@ -29,7 +29,8 @@ module VMCTunnel
       fail "No services available for tunneling." if instances.empty?
 
       instance = input[:instance, instances.sort_by(&:name)]
-      clients = tunnel_clients[instance.vendor] || {}
+      vendor = v2? ? instance.service_plan.service.label : instance.vendor
+      clients = tunnel_clients[vendor] || {}
       client_name = input[:client, clients]
 
       tunnel = CFTunnel.new(client, instance)

@@ -19,7 +19,7 @@ class CFTunnel
   end
 
   def open!
-    if helper.exists?
+    if helper
       auth = helper_auth
 
       unless helper_healthy?(auth)
@@ -79,7 +79,7 @@ class CFTunnel
   private
 
   def helper
-    @helper ||= @client.app(HELPER_NAME)
+    @helper ||= @client.app_by_name(HELPER_NAME)
   end
 
   def create_helper
@@ -122,14 +122,30 @@ class CFTunnel
   def push_helper(token)
     target_base = @client.target.sub(/^[^\.]+\./, "")
 
-    app = @client.app(HELPER_NAME)
-    app.framework = "sinatra"
-    app.url = "#{random_helper_url}.#{target_base}"
+    url = "#{random_helper_url}.#{target_base}"
+    is_v2 = @client.is_a?(CFoundry::V2::Client)
+
+    app = @client.app
+    app.name = HELPER_NAME
+    app.framework = @client.framework_by_name("sinatra")
+    app.runtime = @client.runtime_by_name("ruby19")
     app.total_instances = 1
     app.memory = 64
     app.env = { "CALDECOTT_AUTH" => token }
-    app.services = [@service] if @service
+
+    if is_v2
+      app.space = @client.current_space
+    else
+      app.services = [@service] if @service
+      app.url = url
+    end
+
     app.create!
+
+    if is_v2
+      app.bind(@service)
+      app.create_route(url)
+    end
 
     begin
       app.upload(HELPER_APP)
@@ -218,7 +234,7 @@ class CFTunnel
     end
 
     info = JSON.parse(response)
-    case @service.vendor
+    case (v2? ? @service.service_plan.service.label : @service.vendor)
     when "rabbitmq"
       uri = Addressable::URI.parse info["url"]
       info["hostname"] = uri.host
