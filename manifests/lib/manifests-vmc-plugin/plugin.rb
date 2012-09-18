@@ -30,6 +30,15 @@ class Manifests < VMC::CLI
         end
       end
 
+      case wrap
+      when :file, :files
+        # treat 'vmc files app/' as 'vmc files <app> app/'
+        if input.given?(:app) && !input.given?(:path)
+          path = input.given(:app)
+          input = input.without(:app).merge_given(:path => path)
+        end
+      end
+
       num = 0
       rest =
         specific_apps_or_all(input) do |info|
