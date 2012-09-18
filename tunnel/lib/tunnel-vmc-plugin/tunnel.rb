@@ -233,8 +233,10 @@ class CFTunnel
       raise "Remote tunnel helper is unaware of #{@service.name}!"
     end
 
+    is_v2 = @client.is_a?(CFoundry::V2::Client)
+
     info = JSON.parse(response)
-    case (v2? ? @service.service_plan.service.label : @service.vendor)
+    case (is_v2 ? @service.service_plan.service.label : @service.vendor)
     when "rabbitmq"
       uri = Addressable::URI.parse info["url"]
       info["hostname"] = uri.host
