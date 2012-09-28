@@ -471,7 +471,7 @@ module VMCManifests
 
         if v2?
           plan = service.service_plans.find { |p|
-            p.name == svc["plan"] || "D100"
+            p.name == (svc["plan"] || "D100")
           }
 
           fail "Unknown service plan: #{svc["plan"]}." unless plan
