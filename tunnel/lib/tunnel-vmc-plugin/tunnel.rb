@@ -143,7 +143,7 @@ class CFTunnel
     app.create!
 
     if is_v2
-      app.bind(@service)
+      app.bind(@service) if @service
       app.create_route(url)
     end
 
