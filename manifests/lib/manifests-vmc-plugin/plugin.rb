@@ -16,7 +16,7 @@ class Manifests < VMC::CLI
 
   # basic commands that, when given no name, act on the
   # app(s) described by the manifest, in dependency-order
-  [ :start, :restart, :instances, :logs, :file, :files, :env,
+  [ :start, :restart, :instances, :logs, :env,
     :health, :stats, :scale, :app
   ].each do |wrap|
     optional_name = change_argument(wrap, :app, :optional)
@@ -27,15 +27,6 @@ class Manifests < VMC::CLI
           no_apps
         else
           next cmd.call
-        end
-      end
-
-      case wrap
-      when :file, :files
-        # treat 'vmc files app/' as 'vmc files <app> app/'
-        if input.given?(:app) && !input.given?(:path)
-          path = input.given(:app)
-          input = input.without(:app).merge_given(:path => path)
         end
       end
 
