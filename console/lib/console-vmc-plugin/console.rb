@@ -12,7 +12,12 @@ class CFConsole < CFTunnel
   end
 
   def get_connection_info(auth)
-    unless console = @app.instances[0].console
+    instances = @app.instances
+    if instances.empty?
+      raise "App has no running instances; try starting it."
+    end
+
+    unless console = instances[0].console
       raise "App does not have console access; try restarting it."
     end
 
@@ -159,6 +164,16 @@ class CFConsole < CFTunnel
 
   def close_console
     @telnet.close
+  end
+
+  def console_tab_completion_data(cmd)
+    begin
+      results = @telnet.
+          cmd("String" => cmd + "\t", "Match" => /\S*\n$/, "Timeout" => 10)
+      results.chomp.split(",")
+    rescue TimeoutError
+      [] #Just return empty results if timeout occurred on tab completion
+    end
   end
 
   def telnet_client
