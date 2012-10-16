@@ -19,4 +19,9 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency "tunnel-vmc-plugin", "~> 0.1.8"
+
+  s.add_development_dependency "rake"
+  s.add_development_dependency "rspec", "~> 2.0"
+  s.add_development_dependency "vmc", ">= 0.4.0.beta.42"
+  s.add_development_dependency "ruby-debug19"
 end
