@@ -22,6 +22,8 @@ class Manifests < VMC::CLI
     optional_name = change_argument(wrap, :app, :optional)
 
     around(wrap) do |cmd, input|
+      next cmd.call if input[:all]
+
       unless manifest
         if optional_name && !input.given?(:app)
           no_apps
