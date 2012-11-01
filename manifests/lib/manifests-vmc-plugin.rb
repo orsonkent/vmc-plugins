@@ -78,8 +78,7 @@ module VMCManifests
 
   # merge the manifest at `path' into the `child'
   def merge_parent(child, path)
-    file = File.expand_path(path, File.dirname(manifest_file))
-    merge_manifest(child, build_manifest(file))
+    merge_manifest(child, build_manifest(from_manifest(path)))
   end
 
   # deep hash merge
@@ -221,11 +220,10 @@ module VMCManifests
     return unless manifest
 
     if apps = manifest["applications"]
-      mandir = File.dirname(manifest_file)
-      full_path = File.expand_path(find_path, mandir)
+      full_path = from_manifest(find_path)
 
       manifest["applications"].find do |path, info|
-        File.expand_path(path, mandir) == full_path
+        from_manifest(path) == full_path
       end
     elsif find_path == "."
       [".", toplevel_attributes]
@@ -236,8 +234,7 @@ module VMCManifests
     path, info = app_by_name(path_or_name) || app_by_path(path_or_name)
     return unless info
 
-    abspath = File.expand_path(path, File.dirname(manifest_file))
-    data = { :path => abspath }
+    data = { :path => from_manifest(path) }
 
     toplevel_attributes.merge(info).each do |k, v|
       name = k.to_sym
@@ -275,6 +272,15 @@ module VMCManifests
     end
   end
 
+  def all_apps(input = nil)
+    apps = []
+
+    each_app(input) do |app|
+      apps << app
+    end
+
+    apps
+  end
 
   def no_apps
     fail "No applications or manifest to operate on."
@@ -295,14 +301,18 @@ module VMCManifests
         []
       end
 
+    input = input.without(:app, :apps)
+    in_manifest = []
+
     if names_or_paths.empty?
-      each_app(input, &blk)
-      return []
+      if app = app_info(Dir.pwd, input)
+        in_manifest << app
+      else
+        each_app(input, &blk)
+        return []
+      end
     end
 
-    input = input.without(:app, :apps)
-
-    in_manifest = []
     external = []
     names_or_paths.each do |x|
       if x.is_a?(String)
@@ -330,27 +340,29 @@ module VMCManifests
 
   private
 
+  # expand a path relative to the manifest file's directory
+  def from_manifest(path)
+    File.expand_path(path, File.dirname(manifest_file))
+  end
+
   # sort applications in dependency order
   # e.g. if A depends on B, B will be listed before A
   def ordered_by_deps(apps, abspaths = nil, processed = Set[])
-    mandir = File.dirname(manifest_file)
-
     unless abspaths
       abspaths = {}
       apps.each do |p, i|
-        ep = File.expand_path(p, mandir)
-        abspaths[ep] = i
+        abspaths[from_manifest(p)] = i
       end
     end
 
     ordered = []
     apps.each do |path, info|
-      epath = File.expand_path(path, mandir)
+      epath = from_manifest(path)
 
       if deps = info["depends-on"]
         dep_apps = {}
         deps.each do |dep|
-          edep = File.expand_path(dep, mandir)
+          edep = from_manifest(dep)
 
           raise "Circular dependency detected." if processed.include? edep
 
@@ -381,7 +393,8 @@ module VMCManifests
       "runtime" => app.runtime.name,
       "memory" => human_size(app.memory * 1024 * 1024, 0),
       "instances" => app.total_instances,
-      "url" => app.url && app.url.sub(target_base, '${target-base}')
+      "url" => app.url && app.url.sub(target_base, '${target-base}'),
+      "path" => input[:path]
     }
 
     unless service_instances.empty?
@@ -413,17 +426,10 @@ module VMCManifests
     end
 
     if ask("Save configuration?", :default => false)
-      if input[:path] =~ /\.[[:alnum:]]+$/
-        root = ask("Application root", :default => ".")
-        meta["path"] = input[:path]
-      else
-        root = input[:path]
-      end
-
       with_progress("Saving to #{c("manifest.yml", :name)}") do
         File.open("manifest.yml", "w") do |io|
           YAML.dump(
-            { "applications" => { root => meta } },
+            { "applications" => { "." => meta } },
             io)
         end
       end
@@ -519,4 +525,5 @@ module VMCManifests
 
     format("%.#{precision}fB", num)
   end
+
 end

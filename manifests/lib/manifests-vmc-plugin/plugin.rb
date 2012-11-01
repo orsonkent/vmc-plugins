@@ -87,7 +87,7 @@ class Manifests < VMC::CLI
     :desc => "Reset to values in the manifest"
 
   around(:push) do |push, input|
-    app =
+    single =
       if input.given?(:name)
         path = File.expand_path(input[:name])
         find_by = File.exists?(path) ? path : input[:name]
@@ -95,37 +95,43 @@ class Manifests < VMC::CLI
         app_info(find_by, input.without(:name))
       end
 
-    app ||= app_info(".", input)
+    single ||= app_info(Dir.pwd, input)
 
-    if app
-      with_filters(
-          :push => {
-            :create_app => proc { |a|
-              setup_env(a, app)
-              a
-            },
-            :push_app => proc { |a|
-              setup_services(a, app)
-              a
-            }
-          }) do
-        # only set inputs if creating app or updating with --reset
-        if input[:reset] || !client.app_by_name(app[:name])
-          input = input.merge_given(app)
-        end
+    apps = single ? [single] : all_apps(input)
 
-        push.call(input.merge(
-          :name => app[:name],
-          :bind_services => false,
-          :create_services => false))
-      end
-    else
+    if apps.empty?
       with_filters(
           :push => {
             :push_app =>
               proc { |a| ask_to_save(input, a); a }
           }) do
         push.call
+      end
+    else
+      apps.each do |app|
+        with_filters(
+            :push => {
+              :create_app => proc { |a|
+                setup_env(a, app)
+                a
+              },
+              :push_app => proc { |a|
+                setup_services(a, app)
+                a
+              }
+            }) do
+          # only set inputs if creating app or updating with --reset
+          if input[:reset] || !client.app_by_name(app[:name])
+            app_input = input.merge_given(app)
+          else
+            app_input = input.merge(:path => from_manifest(app[:path]))
+          end
+
+          push.call(app_input.merge(
+            :name => app[:name],
+            :bind_services => false,
+            :create_services => false))
+        end
       end
     end
   end
