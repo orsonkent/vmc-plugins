@@ -1,9 +1,13 @@
+require "pathname"
+
 require "vmc/plugin"
 require "manifests-vmc-plugin"
 
 
 class Manifests < VMC::CLI
   include VMCManifests
+
+  @@showed_manifest_usage = false
 
   option :manifest, :aliases => "-m", :value => :file,
     :desc => "Path to manifest file to use"
@@ -13,6 +17,15 @@ class Manifests < VMC::CLI
     fail "No applications or manifest to operate on."
   end
 
+  def show_manifest_usage
+    return if @@showed_manifest_usage
+
+    path = Pathname.new(manifest_file).relative_path_from(Pathname.pwd)
+    line "Using manifest file #{c(path, :name)}"
+    line
+
+    @@showed_manifest_usage = true
+  end
 
   # basic commands that, when given no name, act on the
   # app(s) described by the manifest, in dependency-order
@@ -31,6 +44,8 @@ class Manifests < VMC::CLI
           next cmd.call
         end
       end
+
+      show_manifest_usage
 
       num = 0
       rest =
@@ -57,6 +72,8 @@ class Manifests < VMC::CLI
   [:stop, :delete].each do |wrap|
     around(wrap) do |cmd, input|
       next cmd.call if input[:all] || !manifest
+
+      show_manifest_usage
 
       reversed = []
       rest =
@@ -108,6 +125,8 @@ class Manifests < VMC::CLI
         push.call
       end
     else
+      show_manifest_usage
+
       apps.each do |app|
         with_filters(
             :push => {
