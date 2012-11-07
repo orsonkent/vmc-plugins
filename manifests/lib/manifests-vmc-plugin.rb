@@ -234,7 +234,7 @@ module VMCManifests
     path, info = app_by_name(path_or_name) || app_by_path(path_or_name)
     return unless info
 
-    data = { :path => from_manifest(path) }
+    data = { :path => path }
 
     toplevel_attributes.merge(info).each do |k, v|
       name = k.to_sym
@@ -245,6 +245,8 @@ module VMCManifests
 
       data[name] = input && input.given(name) || v
     end
+
+    data[:path] = from_manifest(data[:path])
 
     data
   end
