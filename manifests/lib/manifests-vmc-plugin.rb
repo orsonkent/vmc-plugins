@@ -22,23 +22,26 @@ module VMCManifests
 
   # find the manifest file to work with
   def manifest_file
-    return input[:manifest] if input[:manifest]
     return @manifest_file if @manifest_file
 
-    where = Dir.pwd
-    while true
-      if File.exists?(File.join(where, MANIFEST_FILE))
-        @manifest_file = File.join(where, MANIFEST_FILE)
-        break
-      elsif File.basename(where) == "/"
-        @manifest_file = nil
-        break
-      else
-        where = File.expand_path("../", where)
+    unless path = input[:manifest]
+      where = Dir.pwd
+      while true
+        if File.exists?(File.join(where, MANIFEST_FILE))
+          path = File.join(where, MANIFEST_FILE)
+          break
+        elsif File.basename(where) == "/"
+          path = nil
+          break
+        else
+          where = File.expand_path("../", where)
+        end
       end
     end
 
-    @manifest_file
+    return unless path
+
+    @manifest_file = File.expand_path(path)
   end
 
   # convert any deprecated structuring to the modern format
