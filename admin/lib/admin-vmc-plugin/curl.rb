@@ -27,9 +27,12 @@ module VMCAdmin
         headers[k.downcase] = v
       end
 
-      content = headers["content-type"] || :json
-      accept = headers["accept"] || :json
-      
+      content = headers["content-type"]
+      accept = headers["accept"]
+
+      content ||= :json if body
+      accept ||= :json unless [:Delete, :Head].include?(mode)
+
       res =
         client.base.request_path(
           Net::HTTP.const_get(mode),

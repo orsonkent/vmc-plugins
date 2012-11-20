@@ -198,12 +198,9 @@ module VMCManifests
 
   def toplevel_attributes
     if m = manifest
-      info =
-        m.reject do |k, _|
-          MANIFEST_META.include? k
-        end
-
-      info
+      m.reject do |k, _|
+        MANIFEST_META.include? k
+      end
     end
   end
 
@@ -267,7 +264,7 @@ module VMCManifests
       true
 
     # manually created or legacy single-app manifest
-    elsif single = toplevel_attributes
+    elsif toplevel_attributes
       yield app_info(".", input)
 
       true

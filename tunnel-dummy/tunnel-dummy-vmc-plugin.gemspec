@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
 
   s.rubyforge_project = "tunnel-dummy-vmc-plugin"
 
-  s.add_runtime_dependency "cfoundry", "~> 0.3.14"
+  s.add_runtime_dependency "cfoundry", "~> 0.4.0"
 
   s.files         = %w{Rakefile} + Dir.glob("lib/**/*")
   s.test_files    = Dir.glob("spec/**/*")
