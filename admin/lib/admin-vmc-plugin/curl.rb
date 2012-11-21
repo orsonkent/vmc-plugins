@@ -34,9 +34,9 @@ module VMCAdmin
       accept ||= :json unless [:Delete, :Head].include?(mode)
 
       res =
-        client.base.request_path(
+        client.base.request_uri(
+          URI.parse(path),
           Net::HTTP.const_get(mode),
-          path.split("/"),
           :headers => headers,
           :accept => accept,
           :payload => body,
