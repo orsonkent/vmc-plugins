@@ -24,6 +24,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "addressable", "~> 2.2.6"
   s.add_runtime_dependency "eventmachine", "~> 1.0.0.beta"
   s.add_runtime_dependency "caldecott", "~> 0.0.5"
+  s.add_runtime_dependency "rest-client", "~> 1.6.7"
 
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec", "~> 2.0"
