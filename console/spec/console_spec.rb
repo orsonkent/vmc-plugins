@@ -1,5 +1,4 @@
-require "cfoundry"
-require "vmc"
+require "spec_helper"
 require "console-vmc-plugin/plugin"
 
 describe "CFConsole" do
