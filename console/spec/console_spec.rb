@@ -96,7 +96,7 @@ describe "CFConsole" do
       Readline::HISTORY.should_receive(:push).with("puts 'hi'")
       @telnet.should_receive(:cmd).with("puts 'hi'").
           and_return("nil" + "\n" + "irb():002:0> ")
-      STDOUT.should_receive(:puts).with("nil")
+      @console.should_receive(:puts).with("nil")
       verify_console_exit("irb():002:0> ")
 
       @console.start_console
@@ -109,7 +109,7 @@ describe "CFConsole" do
           and_return("puts 'hi'")
       Readline::HISTORY.should_receive(:push).with("puts 'hi'")
       @telnet.should_receive(:cmd).with("puts 'hi'").and_raise(TimeoutError)
-      STDOUT.should_receive(:puts).with("Timed out sending command to server.")
+      @console.should_receive(:puts).with("Timed out sending command to server.")
       verify_console_exit("irb():001:0> ")
 
       @console.start_console
@@ -148,7 +148,7 @@ describe "CFConsole" do
       Readline::HISTORY.should_not_receive(:push).with("puts 'hi'")
       @telnet.should_receive(:cmd).with("puts 'hi'").
           and_return("nil" + "\n" + "irb():002:0> ")
-      STDOUT.should_receive(:puts).with("nil")
+      @console.should_receive(:puts).with("nil")
       verify_console_exit("irb():002:0> ")
 
       @console.start_console
@@ -163,7 +163,7 @@ describe "CFConsole" do
       verify_console_exit("irb():001:0> ")
 
       @console.start_console
-      Readline.completion_proc.yield("app.").should == ["to_s","nil?"]
+      Readline.completion_proc.call("app.").should == ["to_s","nil?"]
     end
 
     it "should return tab completion data receiving empty completion string" do
@@ -175,7 +175,7 @@ describe "CFConsole" do
       verify_console_exit("irb():001:0> ")
 
       @console.start_console
-      Readline.completion_proc.yield("app.").should == []
+      Readline.completion_proc.call("app.").should == []
     end
 
     it "should not crash on timeout of remote tab completion data" do
@@ -187,7 +187,7 @@ describe "CFConsole" do
       verify_console_exit("irb():001:0> ")
 
       @console.start_console
-      Readline.completion_proc.yield("app.").should == []
+      Readline.completion_proc.call("app.").should == []
     end
 
     it "should properly initialize Readline for tab completion" do
@@ -207,8 +207,7 @@ describe "CFConsole" do
 
   def verify_console_exit(prompt)
     Readline.should_receive(:readline).with(prompt).and_return("exit")
-    @telnet.should_receive(:cmd).with(({"String" => "exit", "Timeout" => 1})).
-        and_raise(TimeoutError)
+    @telnet.should_receive(:cmd).with(({"String" => "exit", "Timeout" => 1})).and_raise(TimeoutError)
     @telnet.should_receive(:close)
   end
 end

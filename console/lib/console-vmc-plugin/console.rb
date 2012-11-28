@@ -157,8 +157,10 @@ class CFConsole < CFTunnel
   end
 
   def exit_console
+    @telnet.cmd("String" => "exit", "Timeout" => 1)
+  rescue TimeoutError
     # TimeoutError expected, as exit doesn't return anything
-    @telnet.cmd("String" => "exit", "Timeout" => 1) rescue TimeoutError
+  ensure
     close_console
   end
 
