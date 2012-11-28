@@ -1,1 +1,6 @@
 .rbenv-gemsets
+.idea
+*.gem
+.bundle
+Gemfile.lock
+pkg/*

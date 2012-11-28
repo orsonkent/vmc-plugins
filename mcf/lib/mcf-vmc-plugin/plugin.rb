@@ -1,6 +1,8 @@
 require "yaml"
 require "multi_json"
 require "vmc/cli"
+
+require "mcf-vmc-plugin/help"
 require "mcf-vmc-plugin/micro/micro"
 require "mcf-vmc-plugin/micro/vmrun"
 require "mcf-vmc-plugin/micro/switcher/base"
@@ -13,7 +15,7 @@ module VMCMicro
     MICRO_FILE = '~/.vmc/micro.yml'
 
     desc "Display Micro Cloud Foundry VM status"
-    group :services, :manage
+    group :mcf
     input :vmx, :argument => :required,
       :desc => "Path to micro.vmx"
     input :password, :argument => :optional,
@@ -29,7 +31,7 @@ module VMCMicro
     end
 
     desc "Micro Cloud Foundry offline mode"
-    group :services, :manage
+    group :mcf
     input :vmx, :argument => :required,
       :desc => "Path to micro.vmx"
     input :password, :argument => :optional,
@@ -55,7 +57,7 @@ module VMCMicro
     end
 
     desc "Micro Cloud Foundry online mode"
-    group :services, :manage
+    group :mcf
     input :vmx, :argument => :required,
       :desc => "Path to micro.vmx"
     input :password, :argument => :optional,
