@@ -4,28 +4,12 @@ require "vmc/plugin"
 require "manifests-vmc-plugin"
 
 
-class Manifests < VMC::CLI
+class Manifests < VMC::App::Base
   include VMCManifests
-
-  @@showed_manifest_usage = false
 
   option :manifest, :aliases => "-m", :value => :file,
     :desc => "Path to manifest file to use"
 
-
-  def no_apps
-    fail "No applications or manifest to operate on."
-  end
-
-  def show_manifest_usage
-    return if @@showed_manifest_usage
-
-    path = Pathname.new(manifest_file).relative_path_from(Pathname.pwd)
-    line "Using manifest file #{c(path, :name)}"
-    line
-
-    @@showed_manifest_usage = true
-  end
 
   # basic commands that, when given no name, act on the
   # app(s) described by the manifest, in dependency-order
@@ -104,17 +88,21 @@ class Manifests < VMC::CLI
     :desc => "Reset to values in the manifest"
 
   around(:push) do |push, input|
-    single =
+    particular =
       if input.given?(:name)
         path = File.expand_path(input[:name])
         find_by = File.exists?(path) ? path : input[:name]
 
-        app_info(find_by, input.without(:name))
+        find_apps(find_by)
+      else
+        []
       end
 
-    single ||= app_info(Dir.pwd, input)
+    if particular.empty?
+      particular = find_apps(Dir.pwd)
+    end
 
-    apps = single ? [single] : all_apps(input)
+    apps = particular.empty? ? all_apps : particular
 
     if apps.empty?
       with_filters(
@@ -127,7 +115,7 @@ class Manifests < VMC::CLI
     else
       show_manifest_usage
 
-      apps.each do |app|
+      spaced(apps) do |app|
         with_filters(
             :push => {
               :create_app => proc { |a|
@@ -141,7 +129,7 @@ class Manifests < VMC::CLI
             }) do
           # only set inputs if creating app or updating with --reset
           if input[:reset] || !client.app_by_name(app[:name])
-            app_input = input.merge_given(app)
+            app_input = input.rebase_given(app)
           else
             app_input = input.merge(:path => from_manifest(app[:path]))
           end

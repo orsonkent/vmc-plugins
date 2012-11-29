@@ -1,8 +1,13 @@
 require "yaml"
 require "set"
 
+require "manifests-vmc-plugin/loader"
+
+
 module VMCManifests
   MANIFEST_FILE = "manifest.yml"
+
+  @@showed_manifest_usage = false
 
   def manifest
     return @manifest if @manifest
@@ -44,248 +49,71 @@ module VMCManifests
     @manifest_file = File.expand_path(path)
   end
 
-  # convert any deprecated structuring to the modern format
-  def simplify_info(info)
-    if info["framework"].is_a?(Hash)
-      info["framework"] = info["framework"]["name"]
-    end
-  end
-
   # load and resolve a given manifest file
   def load_manifest(file)
-    manifest = build_manifest(file)
-    resolve_manifest(manifest)
-
-    # single-app manifest
-    simplify_info(manifest)
-
-    if apps = manifest["applications"]
-      apps.each do |path, info|
-        simplify_info(info)
-      end
-    end
-
-    manifest
+    Loader.new(file, self).manifest
   end
 
-  # parse a manifest and merge with its inherited manifests
-  def build_manifest(file)
-    manifest = YAML.load_file file
-
-    Array(manifest["inherit"]).each do |p|
-      manifest = merge_parent(manifest, p)
-    end
-
-    manifest
-  end
-
-  # merge the manifest at `path' into the `child'
-  def merge_parent(child, path)
-    merge_manifest(child, build_manifest(from_manifest(path)))
-  end
-
-  # deep hash merge
-  def merge_manifest(child, parent)
-    merge = proc do |_, old, new|
-      if new.is_a?(Hash) and old.is_a?(Hash)
-        old.merge(new, &merge)
-      else
-        new
-      end
-    end
-
-    parent.merge(child, &merge)
-  end
-
-  # resolve symbols in a manifest
-  def resolve_manifest(manifest)
-    if apps = manifest["applications"]
-      apps.each_value do |v|
-        resolve_lexically(v, [manifest])
-      end
-    end
-
-    resolve_lexically(manifest, [manifest])
-
-    nil
-  end
-
-  # resolve symbols, with hashes introducing new lexical symbols
-  def resolve_lexically(val, ctx)
-    case val
-    when Hash
-      val.each_value do |v|
-        resolve_lexically(v, [val] + ctx)
-      end
-    when Array
-      val.each do |v|
-        resolve_lexically(v, ctx)
-      end
-    when String
-      val.gsub!(/\$\{([^\}]+)\}/) do
-        resolve_symbol($1, ctx)
-      end
-    end
-
-    nil
-  end
-
-  # resolve a symbol to its value, and then resolve that value
-  def resolve_symbol(sym, ctx)
+  # dynamic symbol resolution
+  def resolve_symbol(sym)
     case sym
     when "target-url"
-      target_url(ctx)
+      client_target
 
     when "target-base"
-      target_base(ctx)
+      client_target.sub(/^[^\.]+\./, "")
 
     when "random-word"
-      "%04x" % [rand(0x0100000)]
+      sprintf("%04x", rand(0x0100000))
 
     when /^ask (.+)/
       ask($1)
-
-    else
-      found = find_symbol(sym, ctx)
-
-      if found
-        resolve_lexically(found, ctx)
-        found
-      else
-        fail("Unknown symbol in manifest: #{sym}")
-      end
     end
   end
 
-  # get the target url from either the manifest or the current client
-  def target_url(ctx = [])
-    find_symbol("target", ctx) || client_target
-  end
-
-  def target_base(ctx = [])
-    target_url(ctx).sub(/^[^\.]+\./, "")
-  end
-
-  # search for a symbol introduced in the lexical context
-  def find_symbol(sym, ctx)
-    ctx.each do |h|
-      if val = resolve_in(h, sym)
-        return val
-      end
-    end
-
-    nil
-  end
-
-  # find a value, searching in explicit properties first
-  def resolve_in(hash, *where)
-    find_in_hash(hash, ["properties"] + where) ||
-      find_in_hash(hash, where)
-  end
-
-  # helper for following a path of values in a hash
-  def find_in_hash(hash, where)
-    what = hash
-    where.each do |x|
-      return nil unless what.is_a?(Hash)
-      what = what[x]
-    end
-
-    what
-  end
-
-  MANIFEST_META = ["applications", "properties"]
-
-  def toplevel_attributes
-    if m = manifest
-      m.reject do |k, _|
-        MANIFEST_META.include? k
-      end
+  # find an app by its unique tag
+  def app_by_tag(tag)
+    if info = app_info_by_tag(tag)
+      app_data(info)
     end
   end
 
-  def app_by_name(name, input = nil)
-    return unless manifest
-
-    if apps = manifest["applications"]
-      manifest["applications"].find do |path, info|
-        info["name"] == name
-      end
-    elsif name == manifest["name"]
-      [".", toplevel_attributes]
-    end
-  end
-
-  def app_by_path(find_path)
-    return unless manifest
-
-    if apps = manifest["applications"]
-      full_path = from_manifest(find_path)
-
-      manifest["applications"].find do |path, info|
-        from_manifest(path) == full_path
-      end
-    elsif find_path == "."
-      [".", toplevel_attributes]
-    end
-  end
-
-  def app_info(path_or_name, input = nil)
-    path, info = app_by_name(path_or_name) || app_by_path(path_or_name)
-    return unless info
-
-    data = { :path => path }
-
-    toplevel_attributes.merge(info).each do |k, v|
-      name = k.to_sym
-
-      if name == :mem
-        name = :memory
-      end
-
-      data[name] = input && input.given(name) || v
+  # find apps by an identifier, which may be either a tag, a name, or a path
+  def find_apps(identifier)
+    if app = app_by_tag(identifier)
+      return [app]
     end
 
-    data[:path] = from_manifest(data[:path])
+    apps = app_infos_by("name", identifier)
 
-    data
+    if apps.empty?
+      apps = app_infos_by_path(identifier)
+    end
+
+    apps.collect do |info|
+      app_data(info)
+    end
   end
 
   # call a block for each app in a manifest (in dependency order), setting
   # inputs for each app
-  def each_app(input = nil, &blk)
-    if manifest and all_apps = manifest["applications"]
-      use_inputs = all_apps.size == 1
+  def each_app(&blk)
+    return unless manifest
 
-      ordered_by_deps(all_apps).each do |path|
-        yield app_info(path, use_inputs && input)
-      end
-
-      true
-
-    # manually created or legacy single-app manifest
-    elsif toplevel_attributes
-      yield app_info(".", input)
-
-      true
-
-    else
-      false
+    ordered_by_deps(manifest["applications"]).each do |app|
+      yield app_data(app)
     end
   end
 
-  def all_apps(input = nil)
+  # return all the apps described by the manifest, in dependency order
+  def all_apps
     apps = []
 
-    each_app(input) do |app|
+    each_app do |app|
       apps << app
     end
 
     apps
-  end
-
-  def no_apps
-    fail "No applications or manifest to operate on."
   end
 
   # like each_app, but only acts on apps specified as paths instead of names
@@ -307,10 +135,12 @@ module VMCManifests
     in_manifest = []
 
     if names_or_paths.empty?
-      if app = app_info(Dir.pwd, input)
-        in_manifest << app
+      specific = find_apps(Dir.pwd)
+
+      if !specific.empty?
+        in_manifest += apps
       else
-        each_app(input, &blk)
+        each_app(&blk)
         return []
       end
     end
@@ -320,8 +150,10 @@ module VMCManifests
       if x.is_a?(String)
         path = File.expand_path(x)
 
-        if app = app_info(File.exists?(path) ? path : x, input)
-          in_manifest << app
+        apps = find_apps(File.exists?(path) ? path : x)
+
+        if !apps.empty?
+          in_manifest += apps
         elsif app = client.app_by_name(x)
           external << app
         else
@@ -339,8 +171,61 @@ module VMCManifests
     external
   end
 
-
   private
+
+  def show_manifest_usage
+    return if @@showed_manifest_usage
+
+    path = Pathname.new(manifest_file).relative_path_from(Pathname.pwd)
+    line "Using manifest file #{c(path, :name)}"
+    line
+
+    @@showed_manifest_usage = true
+  end
+
+  def no_apps
+    fail "No applications or manifest to operate on."
+  end
+
+  def app_infos_by(attr, val)
+    found = []
+    manifest["applications"].each do |tag, info|
+      if info[attr] == val
+        found << info
+      end
+    end
+
+    found
+  end
+
+  def app_infos_by_path(find_path)
+    full_path = from_manifest(find_path)
+
+    found = []
+    manifest["applications"].each do |tag, info|
+      if from_manifest(info["path"]) == full_path
+        found << info
+      end
+    end
+
+    found
+  end
+
+  def app_info_by_tag(tag)
+    manifest["applications"][tag]
+  end
+
+  def app_data(info)
+    data = {}
+
+    info.each do |k, v|
+      data[k.to_sym] = v
+    end
+
+    data[:path] = from_manifest(data[:path])
+
+    data
+  end
 
   # expand a path relative to the manifest file's directory
   def from_manifest(path)
@@ -349,35 +234,26 @@ module VMCManifests
 
   # sort applications in dependency order
   # e.g. if A depends on B, B will be listed before A
-  def ordered_by_deps(apps, abspaths = nil, processed = Set[])
-    unless abspaths
-      abspaths = {}
-      apps.each do |p, i|
-        abspaths[from_manifest(p)] = i
-      end
-    end
-
+  def ordered_by_deps(apps, processed = Set[])
     ordered = []
-    apps.each do |path, info|
-      epath = from_manifest(path)
+    apps.each do |tag, info|
+      next if processed.include?(tag)
 
-      if deps = info["depends-on"]
+      if deps = Array(info["depends-on"])
         dep_apps = {}
         deps.each do |dep|
-          edep = from_manifest(dep)
-
-          fail "Circular dependency detected." if processed.include? edep
-
-          dep_apps[dep] = abspaths[edep]
+          dep = dep.to_s
+          fail "Circular dependency detected." if processed.include? dep
+          dep_apps[dep] = apps[dep]
         end
 
-        processed.add(epath)
+        processed.add(tag)
 
-        ordered += ordered_by_deps(dep_apps, abspaths, processed)
-        ordered << path
-      elsif not processed.include? epath
-        ordered << path
-        processed.add(epath)
+        ordered += ordered_by_deps(dep_apps, processed)
+        ordered << info
+      else
+        ordered << info
+        processed.add(tag)
       end
     end
 
@@ -431,7 +307,7 @@ module VMCManifests
       with_progress("Saving to #{c("manifest.yml", :name)}") do
         File.open("manifest.yml", "w") do |io|
           YAML.dump(
-            { "applications" => { "." => meta } },
+            { "applications" => [meta] },
             io)
         end
       end
@@ -500,32 +376,4 @@ module VMCManifests
         :instance => i
     end
   end
-
-  def megabytes(str)
-    if str =~ /T$/i
-      str.to_i * 1024 * 1024
-    elsif str =~ /G$/i
-      str.to_i * 1024
-    elsif str =~ /M$/i
-      str.to_i
-    elsif str =~ /K$/i
-      str.to_i / 1024
-    else # assume megabytes
-      str.to_i
-    end
-  end
-
-  def human_size(num, precision = 1)
-    sizes = ["G", "M", "K"]
-    sizes.each.with_index do |suf, i|
-      pow = sizes.size - i
-      unit = 1024 ** pow
-      if num >= unit
-        return format("%.#{precision}f%s", num / unit, suf)
-      end
-    end
-
-    format("%.#{precision}fB", num)
-  end
-
 end

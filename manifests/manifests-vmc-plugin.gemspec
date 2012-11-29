@@ -19,4 +19,8 @@ Gem::Specification.new do |s|
   s.files         = %w{Rakefile} + Dir.glob("lib/**/*")
   s.test_files    = Dir.glob("spec/**/*")
   s.require_paths = ["lib"]
+
+  s.add_development_dependency "rake"
+  s.add_development_dependency "rspec", "~> 2.0"
+  s.add_development_dependency "vmc", ">= 0.4.0"
 end
