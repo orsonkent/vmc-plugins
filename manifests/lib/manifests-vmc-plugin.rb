@@ -13,7 +13,7 @@ module VMCManifests
   end
 
   def save_manifest(save_to = manifest_file)
-    raise "No manifest to save!" unless @manifest
+    fail "No manifest to save!" unless @manifest
 
     File.open(save_to, "w") do |io|
       YAML.dump(@manifest, io)
@@ -152,7 +152,7 @@ module VMCManifests
         resolve_lexically(found, ctx)
         found
       else
-        raise("Unknown symbol in manifest: #{sym}")
+        fail("Unknown symbol in manifest: #{sym}")
       end
     end
   end
@@ -366,7 +366,7 @@ module VMCManifests
         deps.each do |dep|
           edep = from_manifest(dep)
 
-          raise "Circular dependency detected." if processed.include? edep
+          fail "Circular dependency detected." if processed.include? edep
 
           dep_apps[dep] = abspaths[edep]
         end
