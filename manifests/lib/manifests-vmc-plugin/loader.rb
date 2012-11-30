@@ -19,5 +19,14 @@ module VMCManifests
       resolve! info, @resolver
       info
     end
+
+    private
+
+    # expand a path relative to the manifest file's directory
+    def from_manifest(path)
+      return path unless @file
+
+      File.expand_path(path, File.dirname(@file))
+    end
   end
 end

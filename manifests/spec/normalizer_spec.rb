@@ -18,7 +18,7 @@ describe VMCManifests::Normalizer do
 
       it "sets the path to their tag, assuming it's a path" do
         expect(subject).to eq(
-          "applications" => { "." => { "name" => "foo", "path" => "." } })
+          :applications => { :"." => { :name => "foo", :path => "." } })
       end
     end
 
@@ -30,8 +30,8 @@ describe VMCManifests::Normalizer do
 
         it 'keeps the properties at the toplevel' do
           expect(subject).to eq(
-            "applications" => { "0" => { "name" => "foo", "path" => "." } },
-            "properties" => { "fizz" => "buzz" })
+            :applications => { :"0" => { :name => "foo", :path => "." } },
+            :properties => { :fizz => "buzz" })
         end
       end
 
@@ -41,7 +41,7 @@ describe VMCManifests::Normalizer do
 
           it 'adds it as an application with path .' do
             expect(subject).to eq(
-              "applications" => { "0" => { "name" => "foo", "path" => "." } })
+              :applications => { :"0" => { :name => "foo", :path => "." } })
           end
         end
 
@@ -50,8 +50,8 @@ describe VMCManifests::Normalizer do
 
           it 'adds it as an application with the proper tag and path' do
             expect(subject).to eq(
-              "applications" => {
-                "0" => { "name" => "foo", "path" => "./foo" }
+              :applications => {
+                :"0" => { :name => "foo", :path => "./foo" }
               })
           end
         end
@@ -70,15 +70,15 @@ describe VMCManifests::Normalizer do
 
         it "merges the toplevel attributes into the applications" do
           expect(subject).to eq(
-            "applications" => {
-              "./foo" =>
-                { "name" => "foo", "path" => "./foo", "runtime" => "ruby19" },
+            :applications => {
+              :"./foo" =>
+                { :name => "foo", :path => "./foo", :runtime => "ruby19" },
 
-              "./bar" =>
-                { "name" => "bar", "path" => "./bar", "runtime" => "ruby19" },
+              :"./bar" =>
+                { :name => "bar", :path => "./bar", :runtime => "ruby19" },
 
-              "./baz" =>
-                { "name" => "baz", "path" => "./baz", "runtime" => "ruby18" }
+              :"./baz" =>
+                { :name => "baz", :path => "./baz", :runtime => "ruby18" }
             })
         end
       end
@@ -89,7 +89,7 @@ describe VMCManifests::Normalizer do
 
       it 'converts the array to a hash, with the path as .' do
         expect(subject).to eq(
-          "applications" => { "0" => { "name" => "foo", "path" => "." } })
+          :applications => { :"0" => { :name => "foo", :path => "." } })
       end
     end
   end

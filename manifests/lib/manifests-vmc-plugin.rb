@@ -73,9 +73,7 @@ module VMCManifests
 
   # find an app by its unique tag
   def app_by_tag(tag)
-    if info = app_info_by_tag(tag)
-      app_data(info)
-    end
+    manifest[:applications][tag]
   end
 
   # find apps by an identifier, which may be either a tag, a name, or a path
@@ -84,15 +82,13 @@ module VMCManifests
       return [app]
     end
 
-    apps = app_infos_by("name", identifier)
+    apps = apps_by(:name, identifier)
 
     if apps.empty?
-      apps = app_infos_by_path(identifier)
+      apps = apps_by(:path, from_manifest(identifier))
     end
 
-    apps.collect do |info|
-      app_data(info)
-    end
+    apps
   end
 
   # call a block for each app in a manifest (in dependency order), setting
@@ -100,9 +96,7 @@ module VMCManifests
   def each_app(&blk)
     return unless manifest
 
-    ordered_by_deps(manifest["applications"]).each do |app|
-      yield app_data(app)
-    end
+    ordered_by_deps(manifest[:applications]).each(&blk)
   end
 
   # return all the apps described by the manifest, in dependency order
@@ -187,44 +181,15 @@ module VMCManifests
     fail "No applications or manifest to operate on."
   end
 
-  def app_infos_by(attr, val)
+  def apps_by(attr, val)
     found = []
-    manifest["applications"].each do |tag, info|
+    manifest[:applications].each do |tag, info|
       if info[attr] == val
         found << info
       end
     end
 
     found
-  end
-
-  def app_infos_by_path(find_path)
-    full_path = from_manifest(find_path)
-
-    found = []
-    manifest["applications"].each do |tag, info|
-      if from_manifest(info["path"]) == full_path
-        found << info
-      end
-    end
-
-    found
-  end
-
-  def app_info_by_tag(tag)
-    manifest["applications"][tag]
-  end
-
-  def app_data(info)
-    data = {}
-
-    info.each do |k, v|
-      data[k.to_sym] = v
-    end
-
-    data[:path] = from_manifest(data[:path])
-
-    data
   end
 
   # expand a path relative to the manifest file's directory
@@ -239,10 +204,10 @@ module VMCManifests
     apps.each do |tag, info|
       next if processed.include?(tag)
 
-      if deps = Array(info["depends-on"])
+      if deps = Array(info[:"depends-on"])
         dep_apps = {}
         deps.each do |dep|
-          dep = dep.to_s
+          dep = dep.to_sym
           fail "Circular dependency detected." if processed.include? dep
           dep_apps[dep] = apps[dep]
         end
@@ -346,19 +311,19 @@ module VMCManifests
         to_bind << instance
       else
         service = services.find { |s|
-          s.label == (svc["label"] || svc["type"] || svc["vendor"]) &&
-            (!svc["version"] || s.version == svc["version"]) &&
-            (s.provider == (svc["provider"] || "core"))
+          s.label == (svc[:label] || svc[:type] || svc[:vendor]) &&
+            (!svc[:version] || s.version == svc[:version]) &&
+            (s.provider == (svc[:provider] || "core"))
         }
 
         fail "Unknown service: #{svc.inspect}." unless service
 
         if v2?
           plan = service.service_plans.find { |p|
-            p.name == (svc["plan"] || "D100")
+            p.name == (svc[:plan] || "D100")
           }
 
-          fail "Unknown service plan: #{svc["plan"]}." unless plan
+          fail "Unknown service plan: #{svc[:plan]}." unless plan
         end
 
         invoke :create_service,

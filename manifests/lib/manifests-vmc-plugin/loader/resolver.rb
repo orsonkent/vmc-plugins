@@ -1,7 +1,7 @@
 module VMCManifests
   module Resolver
     def resolve!(manifest, resolver)
-      manifest["applications"].each_value do |v|
+      manifest[:applications].each_value do |v|
         resolve_lexically(resolver, v, [manifest])
       end
 
@@ -34,9 +34,7 @@ module VMCManifests
 
     # resolve a symbol to its value, and then resolve that value
     def resolve(resolver, sym, ctx)
-      found = find_symbol(sym, ctx)
-
-      if found
+      if found = find_symbol(sym.to_sym, ctx)
         resolve_lexically(resolver, found, ctx)
         found
       elsif dynamic = resolver.resolve_symbol(sym)
@@ -59,7 +57,7 @@ module VMCManifests
 
     # find a value, searching in explicit properties first
     def resolve_in(hash, *where)
-      find_in_hash(hash, ["properties"] + where) ||
+      find_in_hash(hash, [:properties] + where) ||
         find_in_hash(hash, where)
     end
 

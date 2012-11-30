@@ -17,10 +17,21 @@ module VMCManifests
 
       manifest["applications"] = apps
 
+      normalize_paths!(apps)
+
+      keyval = normalize_key_val(manifest)
+      manifest.clear.merge!(keyval)
+
       nil
     end
 
     private
+
+    def normalize_paths!(apps)
+      apps.each do |_, app|
+        app["path"] = from_manifest(app["path"])
+      end
+    end
 
     def convert_from_array(apps)
       return apps unless apps.is_a?(Array)
@@ -79,6 +90,23 @@ module VMCManifests
       top["path"] ||= "."
 
       top
+    end
+
+    def normalize_key_val(val)
+      case val
+      when Hash
+        stringified = {}
+
+        val.each do |k, v|
+          stringified[k.to_sym] = normalize_key_val(v)
+        end
+
+        stringified
+      when Array
+        val.collect { |x| normalize_key_val(x) }
+      else
+        val.to_s
+      end
     end
   end
 end
