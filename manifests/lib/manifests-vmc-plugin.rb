@@ -61,7 +61,7 @@ module VMCManifests
       client_target
 
     when "target-base"
-      client_target.sub(/^[^\.]+\./, "")
+      target_base
 
     when "random-word"
       sprintf("%04x", rand(0x0100000))
@@ -342,5 +342,9 @@ module VMCManifests
         :app => app,
         :instance => i
     end
+  end
+
+  def target_base
+    client_target.sub(/^[^\.]+\./, "")
   end
 end
