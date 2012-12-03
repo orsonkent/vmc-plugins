@@ -78,6 +78,8 @@ module VMCManifests
 
   # find apps by an identifier, which may be either a tag, a name, or a path
   def find_apps(identifier)
+    return [] unless manifest
+
     if app = app_by_tag(identifier)
       return [app]
     end
