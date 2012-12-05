@@ -309,6 +309,8 @@ module VMCManifests
     to_bind = []
 
     info[:services].each do |name, svc|
+      name = name.to_s
+
       if instance = client.service_instance_by_name(name)
         to_bind << instance
       else
