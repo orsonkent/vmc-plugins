@@ -1,13 +1,16 @@
 module VMCManifests
   module Resolver
-    def resolve!(manifest, resolver)
-      manifest[:applications].each_value do |v|
-        resolve_lexically(resolver, v, [manifest])
+    def resolve(manifest, resolver)
+      new = {}
+
+      new[:applications] = {}
+
+      manifest[:applications].each do |k, v|
+        new[:applications][k] =
+          resolve_lexically(resolver, v, [manifest])
       end
 
-      resolve_lexically(resolver, manifest, [manifest])
-
-      nil
+      resolve_lexically(resolver, new, [new])
     end
 
     private
@@ -16,24 +19,28 @@ module VMCManifests
     def resolve_lexically(resolver, val, ctx)
       case val
       when Hash
-        val.each_value do |v|
-          resolve_lexically(resolver, v, [val] + ctx)
+        new = {}
+
+        val.each do |k, v|
+          new[k] = resolve_lexically(resolver, v, [val] + ctx)
         end
+
+        new
       when Array
-        val.each do |v|
+        val.collect do |v|
           resolve_lexically(resolver, v, ctx)
         end
       when String
-        val.gsub!(/\$\{([^\}]+)\}/) do
-          resolve(resolver, $1, ctx)
+        val.gsub(/\$\{([^\}]+)\}/) do
+          resolve_symbol(resolver, $1, ctx)
         end
+      else
+        val
       end
-
-      nil
     end
 
     # resolve a symbol to its value, and then resolve that value
-    def resolve(resolver, sym, ctx)
+    def resolve_symbol(resolver, sym, ctx)
       if found = find_symbol(sym.to_sym, ctx)
         resolve_lexically(resolver, found, ctx)
         found

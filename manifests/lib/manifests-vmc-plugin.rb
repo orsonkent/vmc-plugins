@@ -131,9 +131,9 @@ module VMCManifests
     in_manifest = []
 
     if names_or_paths.empty?
-      specific = find_apps(Dir.pwd)
+      apps = find_apps(Dir.pwd)
 
-      if !specific.empty?
+      if !apps.empty?
         in_manifest += apps
       else
         each_app(&blk)

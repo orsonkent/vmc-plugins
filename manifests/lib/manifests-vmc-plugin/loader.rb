@@ -16,8 +16,7 @@ module VMCManifests
     def manifest
       info = build(@file)
       normalize! info
-      resolve! info, @resolver
-      info
+      resolve info, @resolver
     end
 
     private
