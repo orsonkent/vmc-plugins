@@ -22,6 +22,5 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec", "~> 2.0"
-  s.add_development_dependency "vmc", ">= 0.4.0.beta.42"
-  s.add_development_dependency "ruby-debug19"
+  s.add_development_dependency "vmc", ">= 0.4.7"
 end
