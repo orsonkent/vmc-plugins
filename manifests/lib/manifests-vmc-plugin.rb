@@ -273,14 +273,15 @@ module VMCManifests
 
   def ask_to_save(input, app)
     return if manifest_file
+    return unless ask("Save configuration?", :default => false)
 
-    if ask("Save configuration?", :default => false)
-      with_progress("Saving to #{c("manifest.yml", :name)}") do
-        File.open("manifest.yml", "w") do |io|
-          YAML.dump(
-            { "applications" => [meta] },
-            io)
-        end
+    manifest = create_manifest_for(app, input[:path])
+
+    with_progress("Saving to #{c("manifest.yml", :name)}") do
+      File.open("manifest.yml", "w") do |io|
+        YAML.dump(
+          { "applications" => [manifest] },
+          io)
       end
     end
   end
