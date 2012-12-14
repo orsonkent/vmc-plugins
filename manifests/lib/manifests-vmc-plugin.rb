@@ -167,6 +167,50 @@ module VMCManifests
     external
   end
 
+  def create_manifest_for(app, path)
+    meta = {
+      "name" => app.name,
+      "framework" => app.framework.name,
+      "runtime" => app.runtime.name,
+      "memory" => human_size(app.memory * 1024 * 1024, 0),
+      "instances" => app.total_instances,
+      "url" => app.url ? app.url.sub(target_base, '${target-base}') : "none",
+      "path" => path
+    }
+
+    services = app.services
+
+    unless services.empty?
+      meta["services"] = {}
+
+      services.each do |i|
+        if v2?
+          p = i.service_plan
+          s = p.service
+
+          meta["services"][i.name] = {
+            "label" => s.label,
+            "provider" => s.provider,
+            "version" => s.version,
+            "plan" => p.name
+          }
+        else
+          meta["services"][i.name] = {
+            "vendor" => i.vendor,
+            "version" => i.version,
+            "tier" => i.tier
+          }
+        end
+      end
+    end
+
+    if cmd = app.command
+      meta["command"] = cmd
+    end
+
+    meta
+  end
+
   private
 
   def show_manifest_usage
@@ -229,46 +273,6 @@ module VMCManifests
 
   def ask_to_save(input, app)
     return if manifest_file
-
-    service_instances = app.services
-
-    meta = {
-      "name" => app.name,
-      "framework" => app.framework.name,
-      "runtime" => app.runtime.name,
-      "memory" => human_size(app.memory * 1024 * 1024, 0),
-      "instances" => app.total_instances,
-      "url" => app.url && app.url.sub(target_base, '${target-base}'),
-      "path" => input[:path]
-    }
-
-    unless service_instances.empty?
-      meta["services"] = {}
-
-      service_instances.each do |i|
-        if v2?
-          p = i.service_plan
-          s = p.service
-
-          meta["services"][i.name] = {
-            "label" => s.label,
-            "provider" => s.provider,
-            "version" => s.version,
-            "plan" => p.name
-          }
-        else
-          meta["services"][i.name] = {
-            "vendor" => i.vendor,
-            "version" => i.version,
-            "tier" => i.tier
-          }
-        end
-      end
-    end
-
-    if cmd = app.command
-      meta["command"] = cmd
-    end
 
     if ask("Save configuration?", :default => false)
       with_progress("Saving to #{c("manifest.yml", :name)}") do

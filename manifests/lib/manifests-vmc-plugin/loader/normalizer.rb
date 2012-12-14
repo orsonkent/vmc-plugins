@@ -78,6 +78,10 @@ module VMCManifests
       if app.key?("mem")
         app["memory"] = app.delete("mem")
       end
+
+      if app.key?("url") && app["url"].nil?
+        app["url"] = "none"
+      end
     end
 
     def toplevel_attributes(manifest)
@@ -104,6 +108,8 @@ module VMCManifests
         stringified
       when Array
         val.collect { |x| normalize_key_val(x) }
+      when nil
+        nil
       else
         val.to_s
       end

@@ -22,6 +22,17 @@ describe VMCManifests::Normalizer do
       end
     end
 
+    context 'with a manifest where the url is nil' do
+      let(:manifest) { { "applications" => { "." => { "url" => nil } } } }
+
+      it "sets it to none" do
+        expect(subject).to eq(
+          :applications => {
+            :"." => { :path => ".", :url => "none" }
+          })
+      end
+    end
+
     context 'with a manifest with toplevel attributes' do
       context 'and properties' do
         let(:manifest) {
