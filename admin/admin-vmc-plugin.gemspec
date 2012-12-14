@@ -4,7 +4,7 @@ require "admin-vmc-plugin/version"
 
 Gem::Specification.new do |s|
   s.name        = "admin-vmc-plugin"
-  s.version     = VMCAdmin::VERSION
+  s.version     = VMCAdmin::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
   s.homepage    = "http://cloudfoundry.com/"

@@ -4,7 +4,7 @@ require "mcf-vmc-plugin/version"
 
 Gem::Specification.new do |s|
   s.name        = "mcf-vmc-plugin"
-  s.version     = VMCMicro::VERSION
+  s.version     = VMCMicro::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
   s.homepage    = "http://cloudfoundry.com/"

@@ -4,7 +4,7 @@ require "console-vmc-plugin/version"
 
 Gem::Specification.new do |s|
   s.name        = "console-vmc-plugin"
-  s.version     = VMCConsole::VERSION
+  s.version     = VMCConsole::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
   s.homepage    = "http://cloudfoundry.com/"

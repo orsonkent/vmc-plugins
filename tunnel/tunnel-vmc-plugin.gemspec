@@ -4,7 +4,7 @@ require "tunnel-vmc-plugin/version"
 
 Gem::Specification.new do |s|
   s.name        = "tunnel-vmc-plugin"
-  s.version     = VMCTunnel::VERSION
+  s.version     = VMCTunnel::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
   s.homepage    = "http://cloudfoundry.com/"
