@@ -309,7 +309,7 @@ module VMCManifests
   def setup_services(app, info)
     return if !info[:services] || info[:services].empty?
 
-    services = client.services
+    offerings = client.services
 
     to_bind = []
 
@@ -319,16 +319,16 @@ module VMCManifests
       if instance = client.service_instance_by_name(name)
         to_bind << instance
       else
-        service = services.find { |s|
-          s.label == (svc[:label] || svc[:type] || svc[:vendor]) &&
-            (!svc[:version] || s.version == svc[:version]) &&
-            (s.provider == (svc[:provider] || "core"))
+        offering = offerings.find { |o|
+          o.label == (svc[:label] || svc[:type] || svc[:vendor]) &&
+            (!svc[:version] || o.version == svc[:version]) &&
+            (o.provider == (svc[:provider] || "core"))
         }
 
-        fail "Unknown service: #{svc.inspect}." unless service
+        fail "Unknown service offering: #{svc.inspect}." unless offering
 
         if v2?
-          plan = service.service_plans.find { |p|
+          plan = offering.service_plans.find { |p|
             p.name == (svc[:plan] || "D100")
           }
 
@@ -337,17 +337,15 @@ module VMCManifests
 
         invoke :create_service,
           :name => name,
-          :service => service,
+          :offering => offering,
           :plan => plan,
           :app => app
       end
     end
 
-    to_bind.each do |i|
+    to_bind.each do |s|
       # TODO: splat
-      invoke :bind_service,
-        :app => app,
-        :instance => i
+      invoke :bind_service, :app => app, :service => s
     end
   end
 
