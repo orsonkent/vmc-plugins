@@ -4,7 +4,7 @@ require "manifests-vmc-plugin/version"
 
 Gem::Specification.new do |s|
   s.name        = "manifests-vmc-plugin"
-  s.version     = VMCManifests::VERSION
+  s.version     = VMCManifests::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
   s.homepage    = "http://cloudfoundry.com/"
