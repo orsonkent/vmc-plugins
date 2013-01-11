@@ -22,7 +22,7 @@ class Manifests < VMC::App::Base
       next cmd.call if input[:all]
 
       unless manifest
-        if optional_name && !input.given?(:app)
+        if optional_name && !input.has?(:app)
           no_apps
         else
           next cmd.call
@@ -89,7 +89,7 @@ class Manifests < VMC::App::Base
 
   around(:push) do |push, input|
     particular =
-      if input.given?(:name)
+      if input.has?(:name)
         path = File.expand_path(input[:name])
         find_by = File.exists?(path) ? path : input[:name]
 

@@ -117,11 +117,11 @@ module VMCManifests
   # returns the names that were not paths
   def specific_apps_or_all(input = nil, use_name = true, &blk)
     names_or_paths =
-      if input.given?(:apps)
+      if input.has?(:apps)
         # names may be given but be [], which will still cause
-        # interaction, so use #given instead of #[] here
-        input.given(:apps)
-      elsif input.given?(:app)
+        # interaction, so use #direct instead of #[] here
+        input.direct(:apps)
+      elsif input.has?(:app)
         [input[:app]]
       else
         []
