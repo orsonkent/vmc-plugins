@@ -1,7 +1,8 @@
 require "addressable/uri"
 require "restclient"
+require "uuidtools"
 
-require "caldecott"
+require "caldecott-client"
 
 
 class CFTunnel
