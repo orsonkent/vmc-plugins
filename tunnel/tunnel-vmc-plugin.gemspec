@@ -1,4 +1,9 @@
 # -*- encoding: utf-8 -*-
+
+#############
+# WARNING: Separate from the Gemfile. Please update both files
+#############
+
 $:.push File.expand_path("../lib", __FILE__)
 require "tunnel-vmc-plugin/version"
 
@@ -26,7 +31,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "rest-client", "~> 1.6"
   s.add_runtime_dependency "uuidtools", "~> 2.1"
 
-  s.add_development_dependency "rake"
-  s.add_development_dependency "rspec", "~> 2.0"
-  s.add_development_dependency "vmc", ">= 0.4.0.beta.42"
+  s.add_development_dependency "rake", "~> 0.9"
+  s.add_development_dependency "rspec", "~> 2.11"
+  s.add_development_dependency "webmock", "~> 1.9"
+  s.add_development_dependency "rr", "~> 1.0"
 end
