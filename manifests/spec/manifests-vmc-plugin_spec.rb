@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'manifests-vmc-plugin'
 
-require 'cfoundry/spec_helper'
+require 'cfoundry/test_support'
 
 describe VMCManifests do
   let(:cmd) do
@@ -28,32 +28,30 @@ describe VMCManifests do
 
   describe '#create_manifest_for' do
     let(:app) {
-      FactoryGirl.build(
-        :app,
-        :framework => FactoryGirl.build(:framework),
-        :runtime => FactoryGirl.build(:runtime),
+      fake :app,
+        :framework => fake(:framework),
+        :runtime => fake(:runtime),
         :memory => 2048,
         :instances => 2,
         :command => "ruby main.rb",
         :routes => [
-          FactoryGirl.build(
-            :route,
-            :host => "some-app-name",
-            :domain => FactoryGirl.build(:domain, :name => target_base))
+          fake(:route,
+               :host => "some-app-name",
+               :domain => fake(:domain, :name => target_base))
         ],
         :service_bindings => [
-          FactoryGirl.build(
+          fake(
             :service_binding,
             :service_instance =>
-              FactoryGirl.build(
+              fake(
                 :service_instance,
                 :name => "service-1",
                 :service_plan =>
-                  FactoryGirl.build(
+                  fake(
                     :service_plan,
                     :name => "P200",
-                    :service => FactoryGirl.build(:service))))
-        ])
+                    :service => fake(:service))))
+        ]
     }
 
     subject { cmd.create_manifest_for(app, "some-path") }
@@ -95,12 +93,11 @@ describe VMCManifests do
 
     context 'when there is no url' do
       let(:app) {
-        FactoryGirl.build(
-          :app,
-          :framework => FactoryGirl.build(:framework),
-          :runtime => FactoryGirl.build(:runtime),
+        fake :app,
+          :framework => fake(:framework),
+          :runtime => fake(:runtime),
           :memory => 2048,
-          :instances => 2)
+          :instances => 2
       }
 
       its(["url"]) { should eq "none" }
@@ -108,12 +105,11 @@ describe VMCManifests do
 
     context 'when there is no command' do
       let(:app) {
-        FactoryGirl.build(
-          :app,
-          :framework => FactoryGirl.build(:framework),
-          :runtime => FactoryGirl.build(:runtime),
+        fake :app,
+          :framework => fake(:framework),
+          :runtime => fake(:runtime),
           :memory => 2048,
-          :instances => 2)
+          :instances => 2
       }
 
       it { should_not include "command" }
@@ -121,12 +117,11 @@ describe VMCManifests do
 
     context 'when there are no service bindings' do
       let(:app) {
-        FactoryGirl.build(
-          :app,
-          :framework => FactoryGirl.build(:framework),
-          :runtime => FactoryGirl.build(:runtime),
+        fake :app,
+          :framework => fake(:framework),
+          :runtime => fake(:runtime),
           :memory => 2048,
-          :instances => 2)
+          :instances => 2
       }
 
       it { should_not include "services" }
