@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.test_files    = Dir.glob("spec/**/*")
   s.require_paths = ["lib"]
 
-  s.add_development_dependency "vmc"
+  s.add_development_dependency "vmc", ">= 0.5.0.beta.7"
 
   s.add_development_dependency "rake", "~> 0.9"
   s.add_development_dependency "rspec", "~> 2.11"
