@@ -32,7 +32,7 @@ describe VMCManifests do
         :framework => fake(:framework),
         :runtime => fake(:runtime),
         :memory => 2048,
-        :instances => 2,
+        :total_instances => 2,
         :command => "ruby main.rb",
         :routes => [
           fake(:route,
@@ -97,7 +97,7 @@ describe VMCManifests do
           :framework => fake(:framework),
           :runtime => fake(:runtime),
           :memory => 2048,
-          :instances => 2
+          :total_instances => 2
       }
 
       its(["url"]) { should eq "none" }
@@ -109,7 +109,7 @@ describe VMCManifests do
           :framework => fake(:framework),
           :runtime => fake(:runtime),
           :memory => 2048,
-          :instances => 2
+          :total_instances => 2
       }
 
       it { should_not include "command" }
@@ -121,7 +121,7 @@ describe VMCManifests do
           :framework => fake(:framework),
           :runtime => fake(:runtime),
           :memory => 2048,
-          :instances => 2
+          :total_instances => 2
       }
 
       it { should_not include "services" }
