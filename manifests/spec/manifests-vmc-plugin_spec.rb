@@ -66,10 +66,9 @@ describe VMCManifests do
     its(["command"]) { should eq "ruby main.rb" }
 
     it "contains the service information" do
-      manifest = subject
-      expect(manifest["services"]).to be_a Hash
+      expect(subject["services"]).to be_a Hash
 
-      services = manifest["services"]
+      services = subject["services"]
       app.service_bindings.each do |b|
         service = b.service_instance
 

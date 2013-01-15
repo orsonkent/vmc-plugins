@@ -1,5 +1,11 @@
-require 'vmc/spec_helper'
+SPEC_ROOT = File.dirname(__FILE__).freeze
 
-Dir[File.expand_path('../support/**/*.rb', __FILE__)].each do |file|
-  require file
+require "rspec"
+require "vmc"
+require "cfoundry"
+require "cfoundry/test_support"
+
+RSpec.configure do |c|
+  c.include Fake::FakeMethods
+  c.mock_with :rr
 end

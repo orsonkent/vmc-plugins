@@ -1,3 +1,11 @@
-require "cfoundry"
+SPEC_ROOT = File.dirname(__FILE__).freeze
+
+require "rspec"
 require "vmc"
-require "vmc/spec_helper"
+require "cfoundry"
+require "cfoundry/test_support"
+
+RSpec.configure do |c|
+  c.include Fake::FakeMethods
+  c.mock_with :rr
+end
