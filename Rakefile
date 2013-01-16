@@ -4,7 +4,7 @@ task :default => :spec
 
 desc "Run specs"
 task :spec do
-  %w{manifests mcf console}.each do |plugin|
+  %w{manifests mcf console tunnel}.each do |plugin|
     Dir.chdir(File.expand_path("../#{plugin}", __FILE__)) do
       sh("(gem list --local bundler | grep bundler || gem install bundler) && (bundle check || bundle install)")
       sh("bundle exec rspec")
