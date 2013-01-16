@@ -64,6 +64,18 @@ module VMCTunnel
       end
     end
 
+    def tunnel_clients
+      return @tunnel_clients if @tunnel_clients
+      stock_config = YAML.load_file(STOCK_CLIENTS)
+      custom_config_file = File.expand_path(CLIENTS_FILE)
+      if File.exists?(custom_config_file)
+        custom_config = YAML.load_file(custom_config_file)
+        @tunnel_clients = deep_merge(stock_config, custom_config)
+      else
+        @tunnel_clients = stock_config
+      end
+    end
+
     private
 
     def display_tunnel_connection_info(info)
@@ -131,19 +143,6 @@ module VMCTunnel
       system(cmdline)
     end
 
-    def tunnel_clients
-      return @tunnel_clients if @tunnel_clients
-
-      stock = YAML.load_file(STOCK_CLIENTS)
-      clients = File.expand_path CLIENTS_FILE
-      if File.exists? clients
-        user = YAML.load_file(clients)
-        @tunnel_clients = deep_merge(stock, user)
-      else
-        @tunnel_clients = stock
-      end
-    end
-
     def resolve_symbols(str, info, local_port)
       str.gsub(/\$\{\s*([^\}]+)\s*\}/) do
         sym = $1
@@ -165,8 +164,8 @@ module VMCTunnel
     end
 
     def deep_merge(a, b)
-      merge = proc { |old, new|
-        if old === Hash && new === Hash
+      merge = proc { |_, old, new|
+        if old.is_a?(Hash) && new.is_a?(Hash)
           old.merge(new, &merge)
         else
           new

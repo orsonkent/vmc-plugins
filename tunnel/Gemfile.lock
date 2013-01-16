@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/cloudfoundry/vmc-lib.git
-  revision: ad58975768727b1bf9cc69eb8d40648810f33e30
+  revision: d55eddcd302d65ab39e824ca12be062cbcc1d443
   specs:
     cfoundry (0.4.19)
       cf-uaa-lib (~> 1.3.3)
@@ -10,7 +10,7 @@ GIT
 
 GIT
   remote: git://github.com/cloudfoundry/vmc.git
-  revision: f2e1dee9e15bc9dfd7611605ad04c94da033bf23
+  revision: dd9a2bcecf9563a59768ef44066e749e70907361
   specs:
     vmc (0.5.0.beta.7)
       cfoundry (~> 0.4.19)
