@@ -5,10 +5,11 @@ require "tunnel-vmc-plugin/tunnel"
 
 
 class CFConsole < CFTunnel
-  def initialize(client, app, port = 10000)
+  def initialize(client, app, port = 10000, v2 = false)
     @client = client
     @app = app
     @port = port
+    @v2 = v2
   end
 
   def get_connection_info(auth)
@@ -27,7 +28,11 @@ class CFConsole < CFTunnel
   end
 
   def get_credentials
-    YAML.load(@app.file("app", "cf-rails-console", ".consoleaccess"))
+    if @v2
+      YAML.load(@app.file("cf-rails-console", ".consoleaccess"))
+    else
+      YAML.load(@app.file("app", "cf-rails-console", ".consoleaccess"))
+    end
   end
 
   def start_console

@@ -11,7 +11,7 @@ module VMCConsole
     def console
       app = input[:app]
 
-      console = CFConsole.new(client, app)
+      console = CFConsole.new(client, app, nil, v2?)
       port = console.pick_port!(input[:port])
 
       with_progress("Opening console on port #{c(port, :name)}") do
@@ -24,6 +24,7 @@ module VMCConsole
 
     filter(:start, :start_app) do |app|
       if app.framework.name == "rails3" || app.framework.name == "buildpack"
+        puts "Setting console to true"
         app.console = true
       end
 
