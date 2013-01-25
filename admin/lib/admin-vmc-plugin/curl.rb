@@ -17,7 +17,7 @@ module VMCAdmin
     input :body, :alias => "-b",
       :desc => "Request body"
     def curl
-      mode = input[:mode].capitalize.to_sym
+      mode = input[:mode].upcase
       path = input[:path]
       body = input[:body]
 
@@ -31,12 +31,12 @@ module VMCAdmin
       accept = headers["accept"]
 
       content ||= :json if body
-      accept ||= :json unless [:Delete, :Head].include?(mode)
+      accept ||= :json unless %w(DELETE HEAD).include?(mode)
 
-      res =
-        client.base.request_uri(
-          URI.parse(path),
-          Net::HTTP.const_get(mode),
+      req, res =
+        client.base.request_raw(
+          mode,
+          remove_leading_slash(path),
           :headers => headers,
           :accept => accept,
           :payload => body,
@@ -47,6 +47,10 @@ module VMCAdmin
       else
         puts res
       end
+    end
+
+    def remove_leading_slash(path)
+      path.sub(%r{^/}, '')
     end
   end
 end
