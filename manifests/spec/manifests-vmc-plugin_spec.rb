@@ -1,12 +1,13 @@
 require 'spec_helper'
 require 'manifests-vmc-plugin'
 
-require 'cfoundry/test_support'
-
 describe VMCManifests do
+  let(:client) { fake_client }
+
   let(:cmd) do
     manifest = VMC::App::Push.new
     manifest.extend VMCManifests
+    stub(manifest).client { client }
     manifest
   end
 
@@ -124,6 +125,83 @@ describe VMCManifests do
       }
 
       it { should_not include "services" }
+    end
+  end
+
+  describe "#setup_services" do
+    let(:service_bindings) { [] }
+    let(:app) { fake :app, :service_bindings => service_bindings }
+
+    before do
+      dont_allow_ask(anything, anything)
+    end
+
+    context "when services are defined in the manifest" do
+      let(:info) {
+        { :services => { "service-1" => { :label => "mysql", :plan => "100" } } }
+      }
+
+      let(:service_1) { fake(:service_instance, :name => "service-1") }
+
+      let(:plan_100) { fake :service_plan, :name => "100" }
+
+      let(:mysql) {
+        fake(
+          :service,
+          :label => "mysql",
+          :provider => "core",
+          :service_plans => [plan_100])
+      }
+
+      let(:service_instances) { [] }
+
+      let(:client) {
+        fake_client :services => [mysql], :service_instances => service_instances
+      }
+
+      context "and the services exist" do
+        let(:service_instances) { [service_1] }
+
+        context "and are already bound" do
+          let(:service_bindings) { [fake(:service_binding, :service_instance => service_1)] }
+
+          it "does neither create nor bind the service again" do
+            dont_allow(cmd).invoke :create_service, anything
+            dont_allow(cmd).invoke :bind_service, anything
+            cmd.send(:setup_services, app, info)
+          end
+        end
+
+        context "but are not bound" do
+          it "does not create the services" do
+            dont_allow(cmd).invoke :create_service, anything
+            stub(cmd).invoke :bind_service, anything
+            cmd.send(:setup_services, app, info)
+          end
+
+          it "binds the service" do
+            mock(cmd).invoke :bind_service, :app => app, :service => service_1
+            cmd.send(:setup_services, app, info)
+          end
+        end
+      end
+
+      context "and the services do not exist" do
+        it "creates the services" do
+          mock(cmd).invoke :create_service, :app => app,
+            :name => service_1.name, :offering => mysql, :plan => plan_100
+          dont_allow(cmd).invoke :bind_service, anything
+          cmd.send(:setup_services, app, info)
+        end
+      end
+    end
+
+    context "when there are no services defined" do
+      let(:info) { {} }
+
+      it "does not ask anything" do
+        cmd.send(:setup_services, app, info)
+      end
     end
   end
 end

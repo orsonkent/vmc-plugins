@@ -344,6 +344,8 @@ module VMCManifests
     end
 
     to_bind.each do |s|
+      next if app.binds?(s)
+
       # TODO: splat
       invoke :bind_service, :app => app, :service => s
     end
