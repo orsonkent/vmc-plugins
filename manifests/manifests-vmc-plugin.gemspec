@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
 
   s.rubyforge_project = "manifests-vmc-plugin"
 
-  s.add_runtime_dependency "cfoundry", "~> 0.4.0"
+  s.add_runtime_dependency "cfoundry", "~> 0.5.0"
 
   s.files         = %w{Rakefile} + Dir.glob("lib/**/*")
   s.test_files    = Dir.glob("spec/**/*")

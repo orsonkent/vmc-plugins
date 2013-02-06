@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.test_files    = Dir.glob("spec/**/*")
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency "cfoundry", "~> 0.4.0"
+  s.add_runtime_dependency "cfoundry", "~> 0.5.0"
 
   s.add_runtime_dependency "addressable", "~> 2.2"
   s.add_runtime_dependency "caldecott-client", "~> 0.0.2"
