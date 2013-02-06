@@ -6,11 +6,30 @@ require "manifests-vmc-plugin"
 
 class ManifestsPlugin < VMC::App::Base
   include VMCManifests
-  include VMC::App::Sync
 
   option :manifest, :aliases => "-m", :value => :file,
     :desc => "Path to manifest file to use"
 
+
+  [ :start, :restart, :instances, :logs, :env, :health, :stats,
+    :scale, :app, :stop, :delete
+  ].each do |wrap|
+    name_made_optional = change_argument(wrap, :app, :optional)
+
+    around(wrap) do |cmd, input|
+      wrap_with_optional_name(name_made_optional, cmd, input)
+    end
+  end
+
+
+  add_input :push, :reset, :desc => "Reset to values in the manifest",
+            :default => false
+
+  around(:push) do |push, input|
+    wrap_push(push, input)
+  end
+
+  private
 
   def wrap_with_optional_name(name_made_optional, cmd, input)
     return cmd.call if input[:all]
@@ -30,14 +49,14 @@ class ManifestsPlugin < VMC::App::Base
 
     show_manifest_usage
 
-    apps = internal + external
-
-    if apps.empty?
-      apps = current_apps if apps.empty?
-      apps = all_apps if apps.empty?
-      apps = apps.collect { |app| app[:name] }
+    if internal.empty? && external.empty?
+      internal = current_apps if internal.empty?
+      internal = all_apps if internal.empty?
     end
 
+    internal = internal.collect { |app| app[:name] }
+
+    apps = internal + external
     return no_apps if apps.empty?
 
     apps.each.with_index do |app, num|
@@ -46,110 +65,80 @@ class ManifestsPlugin < VMC::App::Base
     end
   end
 
-  # basic commands that, when given no name, act on the
-  # app(s) described by the manifest, in dependency-order
-  [ :start, :restart, :instances, :logs, :env,
-    :health, :stats, :scale, :app
-  ].each do |wrap|
-    name_made_optional = change_argument(wrap, :app, :optional)
-
-    around(wrap) do |cmd, input|
-      wrap_with_optional_name(name_made_optional, cmd, input)
-    end
+  def apply_changes(app, input)
+    app.memory = megabytes(input[:memory]) if input.has?(:memory)
+    app.total_instances = input[:instances] if input.has?(:instances)
+    app.command = input[:command] if input.has?(:command)
+    app.production = input[:plan].upcase.start_with?("P") if input.has?(:plan)
+    app.framework = input[:framework] if input.has?(:framework)
+    app.runtime = input[:runtime] if input.has?(:runtime)
+    app.buildpack = input[:buildpack] if input.has?(:buildpack)
   end
 
-
-  # same as above but in reverse dependency-order
-  [:stop, :delete].each do |wrap|
-    around(wrap) do |cmd, input|
-      next cmd.call if input[:all] || !manifest
-
-      show_manifest_usage
-
-      reversed = []
-      rest =
-        specific_apps_or_all(input) do |info|
-          reversed.unshift info[:name]
-        end
-
-      unless reversed.empty?
-        cmd.call(input.without(:apps).merge_given(:apps => reversed))
-      end
-
-      unless rest.empty?
-        cmd.call(input.without(:apps).merge(:apps => rest))
-      end
+  def wrap_push(push, input)
+    unless manifest
+      create_and_save_manifest(push, input)
+      return
     end
-  end
 
+    particular, external = apps_in_manifest(input)
 
-  # push and sync meta changes in the manifest
-  # also sets env data on creation if present in manifest
-  #
-  # vmc push [name in manifest] = push that app from its path
-  # vmc push [name not in manifest] = push new app using given name
-  # vmc push [path] = push app from its path
-  change_argument :push, :name, :optional
-
-  add_input :push, :reset, :type => :boolean, :default => false,
-    :desc => "Reset to values in the manifest"
-
-  around(:push) do |push, input|
-    particular =
-      if input.has?(:name)
-        path = File.expand_path(input[:name])
-        find_by = File.exists?(path) ? path : input[:name]
-
-        find_apps(find_by)
-      else
-        []
-      end
-
-    if particular.empty?
-      particular = find_apps(Dir.pwd)
+    unless external.empty?
+      fail "Could not find #{b(external.join(", "))}' in the manifest."
     end
 
     apps = particular.empty? ? all_apps : particular
 
-    if apps.empty?
-      with_filters(
-          :push => {
-            :push_app =>
-              proc { |a| ask_to_save(input, a); a }
-          }) do
-        push.call
-      end
+    show_manifest_usage
+
+    spaced(apps) do |app_manifest|
+      push_with_manifest(app_manifest, push, input)
+    end
+  end
+
+  def push_with_manifest(app_manifest, push, input)
+    with_filters(
+      :push => {
+        :create_app => proc { |a|
+          setup_env(a, app_manifest)
+          a
+        },
+        :push_app => proc { |a|
+          setup_services(a, app_manifest)
+          a
+        }
+      }) do
+      app_input = push_input_for(app_manifest, input)
+
+      push.call(app_input)
+    end
+  end
+
+  def push_input_for(app_manifest, input)
+    existing_app = client.app_by_name(app_manifest[:name])
+
+    if !existing_app || input[:reset]
+      input = input.rebase_given(app_manifest)
     else
-      show_manifest_usage
+      warn_reset_changes if manifest_differs?(existing_app, input)
+    end
 
-      spaced(apps) do |app|
-        with_filters(
-            :push => {
-              :create_app => proc { |a|
-                setup_env(a, app)
-                a
-              },
-              :push_app => proc { |a|
-                setup_services(a, app)
-                a
-              }
-            }) do
-          existing_app = client.app_by_name(app[:name])
+    input.merge(
+      :path => from_manifest(app_manifest[:path]),
+      :name => app_manifest[:name],
+      :bind_services => false,
+      :create_services => false)
+  end
 
-          # only set inputs if creating app or updating with --reset
-          if input[:reset] || !existing_app
-            app_input = input.rebase_given(app)
-          else
-            # assign manifest values to detect differences
-            app_input = input.merge(:path => from_manifest(app[:path]))
-          end
+  def manifest_differs?(app, input)
+    apply_changes(app, input)
+    app.changed?
+  end
 
-          push.call(app_input.merge(
-            :name => app[:name],
-            :bind_services => false,
-            :create_services => false))
-        end
-      end
+  def create_and_save_manifest(push, input)
+    with_filters(
+        :push => { :push_app => proc { |a| ask_to_save(input, a); a } }) do
+      push.call
     end
   end
 end

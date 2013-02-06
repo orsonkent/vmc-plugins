@@ -3,11 +3,8 @@ module VMCManifests
     def resolve(manifest, resolver)
       new = {}
 
-      new[:applications] = {}
-
-      manifest[:applications].each do |k, v|
-        new[:applications][k] =
-          resolve_lexically(resolver, v, [manifest])
+      new[:applications] = manifest[:applications].collect do |app|
+        resolve_lexically(resolver, app, [manifest])
       end
 
       resolve_lexically(resolver, new, [new])

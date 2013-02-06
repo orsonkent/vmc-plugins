@@ -224,13 +224,11 @@ describe VMCManifests do
   end
 
   describe "#apps_in_manifest" do
-    let(:manifest) do
-      {:applications => [
-        {:name => "foo", :path => "/abc/foo"},
-        {:name => "bar", :path => "/abc/bar"},
-        {:name => "baz", :path => "/abc/baz"}
-      ]}
-    end
+    let(:foo_hash) { { :name => "foo", :path => "/abc/foo" } }
+    let(:bar_hash) { { :name => "bar", :path => "/abc/bar" } }
+    let(:baz_hash) { { :name => "baz", :path => "/abc/baz" } }
+
+    let(:manifest) { { :applications => [foo_hash, bar_hash, baz_hash] } }
 
     subject { cmd.apps_in_manifest(inputs) }
 
@@ -245,14 +243,14 @@ describe VMCManifests do
       context "and all of them are in the manifest" do
         let(:given_hash) { { :apps => ["foo", "bar"] } }
 
-        its(:first) { should eq ["foo", "bar"] }
+        its(:first) { should eq [foo_hash, bar_hash] }
         its(:last) { should eq [] }
       end
 
       context "and one of them is in the manifest" do
         let(:given_hash) { { :apps => ["foo", "xxx"] } }
 
-        its(:first) { should eq ["foo"] }
+        its(:first) { should eq [foo_hash] }
         its(:last) { should eq ["xxx"] }
       end
 
@@ -268,7 +266,7 @@ describe VMCManifests do
       context "and the paths are in the manifest" do
         let(:given_hash) { { :apps => ["/abc/foo"] } }
 
-        its(:first) { should eq ["foo"] }
+        its(:first) { should eq [foo_hash] }
         its(:last) { should eq [] }
       end
 

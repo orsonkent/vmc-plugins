@@ -98,6 +98,11 @@ module VMCManifests
 
   # splits the user's input, resolving paths with the manifest,
   # into internal/external apps
+  #
+  # internal apps are returned as their data in the manifest
+  #
+  # external apps are the strings that the user gave, to be
+  # passed along wholesale to the wrapped command
   def apps_in_manifest(input = nil, use_name = true, &blk)
     names_or_paths =
       if input.has?(:apps)
@@ -106,6 +111,8 @@ module VMCManifests
         input.direct(:apps)
       elsif input.has?(:app)
         [input.direct(:app)]
+      elsif input.has?(:name)
+        [input.direct(:name)]
       else
         []
       end
@@ -126,7 +133,7 @@ module VMCManifests
         end
 
         if !apps.empty?
-          internal += apps.collect { |app| app[:name] }
+          internal += apps
         else
           external << x
         end
@@ -200,6 +207,12 @@ module VMCManifests
 
   def no_apps
     fail "No applications or manifest to operate on."
+  end
+
+  def warn_reset_changes
+    line c("Not applying manifest changes without --reset", :warning)
+    line "See `vmc diff` for more details."
+    line
   end
 
   def apps_by(attr, val)
