@@ -71,18 +71,9 @@ module VMCManifests
     end
   end
 
-  # find an app by its unique tag
-  def app_by_tag(tag)
-    manifest[:applications][tag]
-  end
-
   # find apps by an identifier, which may be either a tag, a name, or a path
   def find_apps(identifier)
     return [] unless manifest
-
-    if app = app_by_tag(identifier)
-      return [app]
-    end
 
     apps = apps_by(:name, identifier)
 
@@ -93,78 +84,58 @@ module VMCManifests
     apps
   end
 
-  # call a block for each app in a manifest (in dependency order), setting
-  # inputs for each app
-  def each_app(&blk)
-    return unless manifest
-
-    ordered_by_deps(manifest[:applications]).each(&blk)
-  end
-
-  # return all the apps described by the manifest, in dependency order
+  # return all the apps described by the manifest
   def all_apps
-    apps = []
-
-    each_app do |app|
-      apps << app
-    end
-
-    apps
+    manifest[:applications]
   end
 
-  # like each_app, but only acts on apps specified as paths instead of names
-  #
-  # returns the names that were not paths
-  def specific_apps_or_all(input = nil, use_name = true, &blk)
+  def current_apps
+    manifest[:applications].select do |app|
+      next unless app[:path]
+      from_manifest(app[:path]) == Dir.pwd
+    end
+  end
+
+  # splits the user's input, resolving paths with the manifest,
+  # into internal/external apps
+  def apps_in_manifest(input = nil, use_name = true, &blk)
     names_or_paths =
       if input.has?(:apps)
         # names may be given but be [], which will still cause
         # interaction, so use #direct instead of #[] here
         input.direct(:apps)
       elsif input.has?(:app)
-        [input[:app]]
+        [input.direct(:app)]
       else
         []
       end
 
-    input = input.without(:app, :apps)
-    in_manifest = []
-
-    if names_or_paths.empty?
-      apps = find_apps(Dir.pwd)
-
-      if !apps.empty?
-        in_manifest += apps
-      else
-        each_app(&blk)
-        return []
-      end
-    end
-
+    internal = []
     external = []
+
     names_or_paths.each do |x|
       if x.is_a?(String)
-        path = File.expand_path(x)
+        if x =~ %r([/\\])
+          apps = find_apps(File.expand_path(x))
 
-        apps = find_apps(File.exists?(path) ? path : x)
+          if apps.empty?
+            fail("Path #{b(x)} is not present in manifest #{b(relative_manifest_file)}.")
+          end
+        else
+          apps = find_apps(x)
+        end
 
         if !apps.empty?
-          in_manifest += apps
-        elsif app = client.app_by_name(x)
-          external << app
+          internal += apps.collect { |app| app[:name] }
         else
-          fail("Unknown app '#{x}'")
+          external << x
         end
       else
         external << x
       end
     end
 
-    in_manifest.each do |app|
-      blk.call app
-    end
-
-    external
+    [internal, external]
   end
 
   def create_manifest_for(app, path)
@@ -213,10 +184,14 @@ module VMCManifests
 
   private
 
+  def relative_manifest_file
+    Pathname.new(manifest_file).relative_path_from(Pathname.pwd)
+  end
+
   def show_manifest_usage
     return if @@showed_manifest_usage
 
-    path = Pathname.new(manifest_file).relative_path_from(Pathname.pwd)
+    path = relative_manifest_file
     line "Using manifest file #{c(path, :name)}"
     line
 
@@ -228,14 +203,9 @@ module VMCManifests
   end
 
   def apps_by(attr, val)
-    found = []
-    manifest[:applications].each do |tag, info|
-      if info[attr] == val
-        found << info
-      end
+    manifest[:applications].select do |info|
+      info[attr] == val
     end
-
-    found
   end
 
   # expand a path relative to the manifest file's directory
@@ -243,33 +213,6 @@ module VMCManifests
     File.expand_path(path, File.dirname(manifest_file))
   end
 
-  # sort applications in dependency order
-  # e.g. if A depends on B, B will be listed before A
-  def ordered_by_deps(apps, processed = Set[])
-    ordered = []
-    apps.each do |tag, info|
-      next if processed.include?(tag)
-
-      if deps = Array(info[:"depends-on"])
-        dep_apps = {}
-        deps.each do |dep|
-          dep = dep.to_sym
-          fail "Circular dependency detected." if processed.include? dep
-          dep_apps[dep] = apps[dep]
-        end
-
-        processed.add(tag)
-
-        ordered += ordered_by_deps(dep_apps, processed)
-        ordered << info
-      else
-        ordered << info
-        processed.add(tag)
-      end
-    end
-
-    ordered
-  end
 
   def ask_to_save(input, app)
     return if manifest_file

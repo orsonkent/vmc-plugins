@@ -2,10 +2,13 @@ require 'spec_helper'
 require 'manifests-vmc-plugin'
 
 describe VMCManifests do
-  let(:client) { fake_client }
+  let(:inputs_hash) { {} }
+  let(:given_hash) { {} }
+  let(:global_hash) { {} }
+  let(:inputs) { Mothership::Inputs.new(nil, nil, inputs_hash, given_hash, global_hash) }
 
   let(:cmd) do
-    manifest = VMC::App::Push.new
+    manifest = VMC::App::Push.new(nil, inputs)
     manifest.extend VMCManifests
     stub(manifest).client { client }
     manifest
@@ -13,9 +16,24 @@ describe VMCManifests do
 
   let(:target_base) { "some-cloud.com" }
 
+  let(:foo) { fake(:app, :name => "foo") }
+  let(:bar) { fake(:app, :name => "bar") }
+  let(:baz) { fake(:app, :name => "baz") }
+  let(:xxx) { fake(:app, :name => "xxx") }
+  let(:yyy) { fake(:app, :name => "yyy") }
+
+  let(:client) do
+    fake_client :apps => [foo, bar, baz, xxx, yyy]
+  end
+
+  let(:manifest_file) { "/abc/manifest.yml" }
+
   before do
     stub(cmd).target_base { target_base }
     stub(cmd).v2? { true }
+
+    stub(cmd).manifest { manifest }
+    stub(cmd).manifest_file { manifest_file }
   end
 
   describe '#find_apps' do
@@ -202,6 +220,102 @@ describe VMCManifests do
       it "does not ask anything" do
         cmd.send(:setup_services, app, info)
       end
+    end
+  end
+
+  describe "#apps_in_manifest" do
+    let(:manifest) do
+      {:applications => [
+        {:name => "foo", :path => "/abc/foo"},
+        {:name => "bar", :path => "/abc/bar"},
+        {:name => "baz", :path => "/abc/baz"}
+      ]}
+    end
+
+    subject { cmd.apps_in_manifest(inputs) }
+
+    context "when no apps are passed" do
+      let(:given_hash) { {} }
+
+      its(:first) { should eq [] }
+      its(:last) { should eq [] }
+    end
+
+    context "when app names are passed" do
+      context "and all of them are in the manifest" do
+        let(:given_hash) { { :apps => ["foo", "bar"] } }
+
+        its(:first) { should eq ["foo", "bar"] }
+        its(:last) { should eq [] }
+      end
+
+      context "and one of them is in the manifest" do
+        let(:given_hash) { { :apps => ["foo", "xxx"] } }
+
+        its(:first) { should eq ["foo"] }
+        its(:last) { should eq ["xxx"] }
+      end
+
+      context "and none of them are in the manifest" do
+        let(:given_hash) { { :apps => ["xxx", "yyy"] } }
+
+        its(:first) { should eq [] }
+        its(:last) { should eq ["xxx", "yyy"] }
+      end
+    end
+
+    context "when apps are passed as paths" do
+      context "and the paths are in the manifest" do
+        let(:given_hash) { { :apps => ["/abc/foo"] } }
+
+        its(:first) { should eq ["foo"] }
+        its(:last) { should eq [] }
+      end
+
+      context "and any path is not in the manifest" do
+        let(:given_hash) { { :apps => ["/abc/xxx"] } }
+
+        it "fails with a manifest-specific method (i.e. path not in manifest)" do
+          expect { subject }.to raise_error(VMC::UserError, /Path .+ is not present in manifest/)
+        end
+      end
+    end
+  end
+
+  describe "#all_apps" do
+    let(:applications) do
+      [
+        {:name => "foo", :path => "/abc"},
+        {:name => "bar", :path => "/abc"},
+        {:name => "baz", :path => "/abc/baz"}
+      ]
+    end
+
+    let(:manifest) do
+      { :applications => applications }
+    end
+
+    subject { cmd.all_apps }
+
+    it "returns all of the apps described in the manifest, as hashes" do
+      expect(subject).to eq applications
+    end
+  end
+
+  describe "#current_apps" do
+    let(:manifest) do
+      {:applications => [
+        {:name => "foo", :path => "/abc"},
+        {:name => "bar", :path => "/abc"},
+        {:name => "baz", :path => "/abc/baz"}
+      ]}
+    end
+
+    subject { cmd.current_apps }
+
+    it "returns the applications with the cwd as their path" do
+      stub(Dir).pwd { "/abc" }
+      expect(subject).to eq [{ :name => "foo", :path => "/abc"}, { :name => "bar", :path => "/abc" }]
     end
   end
 end

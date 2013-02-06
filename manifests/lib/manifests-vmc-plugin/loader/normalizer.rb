@@ -10,7 +10,7 @@ module VMCManifests
 
       default_paths_to_keys!(apps)
 
-      apps = convert_from_array(apps) 
+      apps = convert_to_array(apps)
 
       merge_toplevel!(toplevel, manifest, apps)
       normalize_apps!(apps)
@@ -28,20 +28,43 @@ module VMCManifests
     private
 
     def normalize_paths!(apps)
-      apps.each do |_, app|
+      apps.each do |app|
         app["path"] = from_manifest(app["path"])
       end
     end
 
-    def convert_from_array(apps)
-      return apps unless apps.is_a?(Array)
+    def convert_to_array(apps)
+      return apps if apps.is_a?(Array)
 
-      apps_hash = {}
-      apps.each.with_index do |a, i|
-        apps_hash[i.to_s] = a
+      ordered_by_deps(apps)
+    end
+
+    # sort applications in dependency order
+    # e.g. if A depends on B, B will be listed before A
+    def ordered_by_deps(apps, processed = Set[])
+      ordered = []
+      apps.each do |tag, info|
+        next if processed.include?(tag)
+
+        if deps = Array(info["depends-on"])
+          dep_apps = {}
+          deps.each do |dep|
+            dep_apps[dep] = apps[dep]
+          end
+
+          processed.add(tag)
+
+          ordered += ordered_by_deps(dep_apps, processed)
+          ordered << info
+        else
+          ordered << info
+          processed.add(tag)
+        end
       end
 
-      apps_hash
+      ordered.each { |app| app.delete("depends-on") }
+
+      ordered
     end
 
     def default_paths_to_keys!(apps)
@@ -53,7 +76,7 @@ module VMCManifests
     end
 
     def normalize_apps!(apps)
-      apps.each_value do |app|
+      apps.each do |app|
         normalize_app!(app)
       end
     end
@@ -61,8 +84,8 @@ module VMCManifests
     def merge_toplevel!(toplevel, manifest, apps)
       return if toplevel.empty?
 
-      apps.each do |t, a|
-        apps[t] = toplevel.merge(a)
+      apps.collect! do |a|
+        toplevel.merge(a)
       end
 
       toplevel.each do |k, _|

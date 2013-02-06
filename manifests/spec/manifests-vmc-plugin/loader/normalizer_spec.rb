@@ -18,7 +18,7 @@ describe VMCManifests::Normalizer do
 
       it "sets the path to their tag, assuming it's a path" do
         expect(subject).to eq(
-          :applications => { :"." => { :name => "foo", :path => "." } })
+          :applications => [{ :name => "foo", :path => "." }])
       end
     end
 
@@ -27,9 +27,7 @@ describe VMCManifests::Normalizer do
 
       it "sets it to none" do
         expect(subject).to eq(
-          :applications => {
-            :"." => { :path => ".", :url => "none" }
-          })
+          :applications => [{ :path => ".", :url => "none" }])
       end
     end
 
@@ -41,7 +39,7 @@ describe VMCManifests::Normalizer do
 
         it 'keeps the properties at the toplevel' do
           expect(subject).to eq(
-            :applications => { :"0" => { :name => "foo", :path => "." } },
+            :applications => [{ :name => "foo", :path => "." }],
             :properties => { :fizz => "buzz" })
         end
       end
@@ -52,7 +50,7 @@ describe VMCManifests::Normalizer do
 
           it 'adds it as an application with path .' do
             expect(subject).to eq(
-              :applications => { :"0" => { :name => "foo", :path => "." } })
+              :applications => [{ :name => "foo", :path => "." }])
           end
         end
 
@@ -61,9 +59,7 @@ describe VMCManifests::Normalizer do
 
           it 'adds it as an application with the proper tag and path' do
             expect(subject).to eq(
-              :applications => {
-                :"0" => { :name => "foo", :path => "./foo" }
-              })
+              :applications => [{ :name => "foo", :path => "./foo" }])
           end
         end
       end
@@ -80,27 +76,50 @@ describe VMCManifests::Normalizer do
         }
 
         it "merges the toplevel attributes into the applications" do
-          expect(subject).to eq(
-            :applications => {
-              :"./foo" =>
-                { :name => "foo", :path => "./foo", :runtime => "ruby19" },
-
-              :"./bar" =>
-                { :name => "bar", :path => "./bar", :runtime => "ruby19" },
-
-              :"./baz" =>
-                { :name => "baz", :path => "./baz", :runtime => "ruby18" }
-            })
+          expect(subject[:applications]).to match_array [
+            { :name => "foo", :path => "./foo", :runtime => "ruby19" },
+            { :name => "bar", :path => "./bar", :runtime => "ruby19" },
+            { :name => "baz", :path => "./baz", :runtime => "ruby18" }
+          ]
         end
       end
     end
 
-    context 'with a manifest where applications is an array' do
-      let(:manifest) { { "applications" => [{ "name" => "foo" }] } }
+    context 'with a manifest where applications is a hash' do
+      let(:manifest) { { "applications" => { "foo" => { "name" => "foo" } } } }
 
-      it 'converts the array to a hash, with the path as .' do
+      it 'converts the array to a hash, with the path as the key' do
         expect(subject).to eq(
-          :applications => { :"0" => { :name => "foo", :path => "." } })
+          :applications => [{ :name => "foo", :path => "foo" }])
+      end
+
+      context "and the applications had dependencies" do
+        let(:manifest) do
+          { "applications" => {
+              "bar" => { "name" => "bar", "depends-on" => "foo" },
+              "foo" => { "name" => "foo" }
+            }
+          }
+        end
+
+        it "converts using dependency order" do
+          expect(subject).to eq(
+            :applications => [{ :name => "foo", :path => "foo" }, { :name => "bar", :path => "bar" }])
+        end
+
+        context "and there's a circular dependency" do
+          let(:manifest) do
+            { "applications" => {
+               "bar" => { "name" => "bar", "depends-on" => "foo" },
+               "foo" => { "name" => "foo", "depends-on" => "bar" }
+              }
+            }
+          end
+
+          it "doesn't blow up" do
+            expect(subject).to be_true
+          end
+        end
       end
     end
   end

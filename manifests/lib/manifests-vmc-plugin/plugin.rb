@@ -4,50 +4,57 @@ require "vmc/plugin"
 require "manifests-vmc-plugin"
 
 
-class Manifests < VMC::App::Base
+class ManifestsPlugin < VMC::App::Base
   include VMCManifests
+  include VMC::App::Sync
 
   option :manifest, :aliases => "-m", :value => :file,
     :desc => "Path to manifest file to use"
 
+
+  def wrap_with_optional_name(name_made_optional, cmd, input)
+    return cmd.call if input[:all]
+
+    unless manifest
+      # if the command knows how to handle this
+      if input.has?(:app) || !name_made_optional
+        return cmd.call
+      else
+        return no_apps
+      end
+    end
+
+    internal, external = apps_in_manifest(input)
+
+    return cmd.call if internal.empty? && !external.empty?
+
+    show_manifest_usage
+
+    apps = internal + external
+
+    if apps.empty?
+      apps = current_apps if apps.empty?
+      apps = all_apps if apps.empty?
+      apps = apps.collect { |app| app[:name] }
+    end
+
+    return no_apps if apps.empty?
+
+    apps.each.with_index do |app, num|
+      line unless quiet? || num == 0
+      cmd.call(input.without(:apps).merge_given(:app => app))
+    end
+  end
 
   # basic commands that, when given no name, act on the
   # app(s) described by the manifest, in dependency-order
   [ :start, :restart, :instances, :logs, :env,
     :health, :stats, :scale, :app
   ].each do |wrap|
-    optional_name = change_argument(wrap, :app, :optional)
+    name_made_optional = change_argument(wrap, :app, :optional)
 
     around(wrap) do |cmd, input|
-      next cmd.call if input[:all]
-
-      unless manifest
-        if optional_name && !input.has?(:app)
-          no_apps
-        else
-          next cmd.call
-        end
-      end
-
-      show_manifest_usage
-
-      num = 0
-      rest =
-        specific_apps_or_all(input) do |info|
-          puts "" unless quiet? || num == 0
-          cmd.call(input.without(:apps).merge_given(:app => info[:name]))
-          num += 1
-        end
-
-      if rest
-        rest.each do |name|
-          cmd.call(input.without(:apps).merge(:app => name))
-        end
-
-      # fail manually for commands whose name we made optional
-      elsif optional_name
-        no_apps
-      end
+      wrap_with_optional_name(name_made_optional, cmd, input)
     end
   end
 
@@ -127,10 +134,13 @@ class Manifests < VMC::App::Base
                 a
               }
             }) do
+          existing_app = client.app_by_name(app[:name])
+
           # only set inputs if creating app or updating with --reset
-          if input[:reset] || !client.app_by_name(app[:name])
+          if input[:reset] || !existing_app
             app_input = input.rebase_given(app)
           else
+            # assign manifest values to detect differences
             app_input = input.merge(:path => from_manifest(app[:path]))
           end
 
