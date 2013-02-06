@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.test_files    = Dir.glob("spec/**/*")
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency "tunnel-vmc-plugin", "~> 0.1.8"
+  s.add_runtime_dependency "tunnel-vmc-plugin", "~> 0.2.0"
 
   s.add_development_dependency "rake", "~> 0.9"
   s.add_development_dependency "rspec", "~> 2.11"
