@@ -34,7 +34,7 @@ module VMCAdmin
       accept ||= :json unless %w(DELETE HEAD).include?(mode)
 
       req, res =
-        client.base.request_raw(
+        client.base.rest_client.request(
           mode,
           remove_leading_slash(path),
           :headers => headers,
