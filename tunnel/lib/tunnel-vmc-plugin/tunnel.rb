@@ -80,7 +80,7 @@ class CFTunnel
   private
 
   def helper
-    @helper ||= @client.app_by_name(HELPER_NAME)
+    @helper ||= @client.app_by_name("#{HELPER_NAME}-#{@service.infra.name}")
   end
 
   def create_helper
@@ -121,15 +121,13 @@ class CFTunnel
   end
 
   def push_helper(token)
-    target_base = @client.target.sub(/^[^\.]+\./, "")
-
-    url = "#{random_helper_url}.#{target_base}"
+    url = "#{random_helper_url}.#{@service.infra.name}.af.cm"
     is_v2 = @client.is_a?(CFoundry::V2::Client)
 
     app = @client.app
-    app.name = HELPER_NAME
+    app.name = "#{HELPER_NAME}-#{@service.infra.name}"
     app.framework = @client.framework_by_name("sinatra")
-    app.runtime = @client.runtime_by_name("ruby19")
+    app.runtime = @client.runtime_by_name("ruby192")
     app.total_instances = 1
     app.memory = 64
     app.env = { "CALDECOTT_AUTH" => token }
@@ -287,7 +285,7 @@ class CFTunnel
 
   def random_helper_url
     random = sprintf("%x", rand(1000000))
-    "caldecott-#{random}"
+    "caldecott-#{@service.infra.name}-#{random}"
   end
 
   def safe_path(*segments)
