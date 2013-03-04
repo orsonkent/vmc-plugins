@@ -9,7 +9,7 @@ require "export-af-cli-plugin/version"
 
 Gem::Specification.new do |s|
   s.name        = "export-af-cli-plugin"
-  s.version     = AFCLIClone::VERSION.dup
+  s.version     = AFCLIExport::VERSION.dup
   s.authors     = ["Tim Santeford"]
   s.email       = ["tim@appfog.com"]
   s.homepage    = "http://www.appfog.com/"

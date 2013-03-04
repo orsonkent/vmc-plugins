@@ -1,8 +1,8 @@
 GIT
   remote: git://github.com/cloudfoundry/vmc-lib.git
-  revision: e44f6c77acaa717867c1eef731407a74d657550b
+  revision: 89f08b6897e447c2b61445331b124d040b0fd835
   specs:
-    cfoundry (0.5.1.rc2)
+    cfoundry (0.5.1.rc5)
       cf-uaa-lib (~> 1.3.3)
       multi_json (~> 1.3)
       multipart-post (~> 1.1)
@@ -10,17 +10,17 @@ GIT
 
 GIT
   remote: git://github.com/cloudfoundry/vmc.git
-  revision: 57cff965cb0204664b216f549ca875c307c896c1
+  revision: d559cefdce2e63840460761064c720f1436cb237
   specs:
-    vmc (0.5.0.rc1)
-      cfoundry (>= 0.5.1.rc2, < 0.6)
+    vmc (0.5.0.rc4)
+      cfoundry (>= 0.5.1.rc5, < 0.6)
       clouseau (~> 0.0)
       interact (~> 0.5)
       json_pure (~> 1.6)
-      manifests-vmc-plugin (~> 0.6)
+      manifests-vmc-plugin (~> 0.6.2.rc1)
       mothership (>= 0.5.1, < 1.0)
       multi_json (~> 1.3)
-      tunnel-vmc-plugin (~> 0.2)
+      tunnel-vmc-plugin (~> 0.2.1.rc3)
 
 GEM
   remote: http://rubygems.org/
@@ -46,7 +46,7 @@ GEM
     highline (1.6.15)
     interact (0.5.2)
     json_pure (1.7.7)
-    manifests-vmc-plugin (0.6.1)
+    manifests-vmc-plugin (0.6.2.rc1)
       cfoundry (~> 0.5.0)
     mime-types (1.21)
     mothership (0.5.1)
@@ -56,7 +56,7 @@ GEM
       net-ssh (>= 2.6.5)
     net-sftp (2.1.1)
       net-ssh (>= 2.6.5)
-    net-ssh (2.6.5)
+    net-ssh (2.6.6)
     net-ssh-gateway (1.2.0)
       net-ssh (>= 2.6.5)
     rake (10.0.3)
@@ -72,14 +72,14 @@ GEM
       diff-lcs (>= 1.1.3, < 2.0)
     rspec-mocks (2.13.0)
     rubyzip (0.9.9)
-    tunnel-vmc-plugin (0.2.0)
+    tunnel-vmc-plugin (0.2.1.rc3)
       addressable (~> 2.2)
       caldecott-client (~> 0.0.2)
       cfoundry (~> 0.5.0)
       rest-client (~> 1.6)
       uuidtools (~> 2.1)
     uuidtools (2.1.3)
-    webmock (1.9.3)
+    webmock (1.11.0)
       addressable (>= 2.2.7)
       crack (>= 0.3.2)
 
