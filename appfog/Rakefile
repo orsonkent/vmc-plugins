@@ -1,7 +1,7 @@
 require "rake"
 
 $LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
-require "pull-af-cli-plugin/version"
+require "appfog-vmc-plugin/version"
 
 task :default => :spec
 
@@ -12,21 +12,21 @@ desc "Run integration tests"
 task :test => ["bundler:install", "test:integration"]
 
 task :build do
-  sh "gem build pull-af-cli-plugin.gemspec"
+  sh "gem build appfog-vmc-plugin.gemspec"
 end
 
 task :install => :build do
-  sh "gem install --local pull-af-cli-plugin-#{AFCLIClone::VERSION}.gem"
+  sh "gem install --local appfog-vmc-plugin-#{AFCLIClone::VERSION}.gem"
 end
 
 task :uninstall do
-  sh "gem uninstall pull-af-cli-plugin"
+  sh "gem uninstall appfog-vmc-plugin"
 end
 
 task :reinstall => [:uninstall, :install]
 
 task :release => :build do
-  sh "gem push pull-af-cli-plugin-#{AFCLIClone::VERSION}.gem"
+  sh "gem push appfog-vmc-plugin-#{AFCLIClone::VERSION}.gem"
 end
 
 namespace "bundler" do

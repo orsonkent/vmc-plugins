@@ -1,22 +1,5 @@
-require "vmc/cli"
-require "pull-af-cli-plugin/help"
-
-module AFCLIPull
-  class Pull < VMC::CLI
-    desc "Downloads last pushed source to app name or path"
-    group :apps, :download
-    input :app, :desc => "Application to pull", :argument => :optional,
-          :from_given => by_name(:app)
-    input :path,      :desc => "Path to store app"
-    def pull
-      app = input[:app]
-      path = File.expand_path(input[:path] || app.name)
-
-      with_progress("Pulling last pushed source code to #{c(app.name, :name)}") do
-        client.app_pull(app.name, path)
-      end
-    end
-
+module VMCAppfog
+  class Download < VMC::CLI
     desc "Downloads last pushed source to zipfile"
     group :apps, :download
     input :app, :desc => "Application to pull", :argument => :optional,

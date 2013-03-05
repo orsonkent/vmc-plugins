@@ -1,6 +1,4 @@
-require "vmc/cli"
-
-module AFCLIClone
+module VMCAppfog
   class Clone < VMC::CLI
     desc "Clone the application and services"
     group :apps, :manage

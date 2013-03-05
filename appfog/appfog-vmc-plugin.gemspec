@@ -5,11 +5,11 @@
 #############
 
 $:.push File.expand_path("../lib", __FILE__)
-require "clone-af-cli-plugin/version"
+require "appfog-vmc-plugin/version"
 
 Gem::Specification.new do |s|
-  s.name        = "clone-af-cli-plugin"
-  s.version     = AFCLIClone::VERSION.dup
+  s.name        = "appfog-vmc-plugin"
+  s.version     = VMCAppfog::VERSION.dup
   s.authors     = ["Tim Santeford"]
   s.email       = ["tim@appfog.com"]
   s.homepage    = "http://www.appfog.com/"
@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
     Clones applications between infras
   }
 
-  s.rubyforge_project = "clone-af-cli-plugin"
+  s.rubyforge_project = "appfog-vmc-plugin"
 
   s.files         = %w{Rakefile} + Dir.glob("{lib}/**/*")
   s.test_files    = Dir.glob("spec/**/*")
