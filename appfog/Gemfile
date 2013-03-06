@@ -4,8 +4,8 @@ source "http://rubygems.org"
 # WARNING: Separate from the Gemspec. Please update both files
 #############
 
-gem "cfoundry", :git => "git://github.com/cloudfoundry/vmc-lib.git"
-gem "vmc", :git => "git://github.com/cloudfoundry/vmc.git"
+gem "cfoundry"
+gem "vmc"
 
 group :development, :test do
   gem "rake"
