@@ -10,14 +10,14 @@ require "appfog-vmc-plugin/version"
 Gem::Specification.new do |s|
   s.name        = "appfog-vmc-plugin"
   s.version     = VMCAppfog::VERSION.dup
-  s.authors     = ["Tim Santeford"]
-  s.email       = ["tim@appfog.com"]
+  s.authors     = ["Tim Santeford", "Joe Moon"]
+  s.email       = ["support@appfog.com"]
   s.homepage    = "http://www.appfog.com/"
-  s.summary     = %q{
-    Clones applications between infras
+  s.description = s.summary = %q{
+    AppFog specific plugins for the AF CLI
   }
 
-  s.rubyforge_project = "appfog-vmc-plugin"
+  s.platform = Gem::Platform::RUBY
 
   s.files         = %w{Rakefile} + Dir.glob("{lib}/**/*")
   s.test_files    = Dir.glob("spec/**/*")
