@@ -2,7 +2,7 @@ module VMC::App
   class Apps < Base
     def display_apps_table(apps)
       table(
-        ["name", "infra", "status", "usage", v2? && "plan", "runtime", "urls"],
+        ["name", "infra", "status", "usage", v2? && "plan", "runtime", "urls", "services"],
         apps.collect { |a|
           [ c(a.name, :name),
             c(a.infra.name, :infra),
@@ -16,6 +16,11 @@ module VMC::App
               a.url
             else
               a.urls.join(", ")
+            end,
+            if a.services.empty?
+              d("none")
+            else
+              a.services.collect {|s| c(s.name, :name)}.join(", ")
             end
           ]
         })
