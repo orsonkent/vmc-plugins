@@ -136,8 +136,9 @@ class ManifestsPlugin < VMC::App::Base
   end
 
   def create_and_save_manifest(push, input)
+
     with_filters(
-        :push => { :push_app => proc { |a| ask_to_save(input, a); a } }) do
+        :push => { :create_app => proc { |a| ask_to_save(input, a); a } }) do
       push.call
     end
   end
