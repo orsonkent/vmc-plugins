@@ -1,8 +1,8 @@
 module CFoundry
   class BaseClient
     def get(*args)
-      options = args.reduce do |path, arg|
-        arg.is_a?(String) ? nil : arg
+      options = args.reduce({}) do |opts, arg|
+        arg.is_a?(Hash) ? arg : opts
       end
       tries = options.has_key?(:retry) && options[:retry] == false ? 1 : 3
       delay = options.has_key?(:delay) ? options[:delay] : 10
