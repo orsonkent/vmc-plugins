@@ -4,7 +4,7 @@ module Net
 
     alias _request_ request
     def request(req, body=nil, &block)
-      @socket.read_timeout = HTTP_TIMEOUT
+      @socket.read_timeout = HTTP_TIMEOUT unless @socket.nil?
       return _request_(req, body, &block)
     end
   end

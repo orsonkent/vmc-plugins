@@ -126,6 +126,7 @@ class CFTunnel
 
     app = @client.app
     app.name = "#{HELPER_NAME}-#{@service.infra.name}"
+    app.infra = @service.infra
     app.framework = @client.framework_by_name("sinatra")
     app.runtime = @client.runtime_by_name("ruby192")
     app.total_instances = 1
@@ -285,7 +286,7 @@ class CFTunnel
 
   def random_helper_url
     random = sprintf("%x", rand(1000000))
-    "caldecott-#{@service.infra.name}-#{random}"
+    "caldecott-#{random}"
   end
 
   def safe_path(*segments)
