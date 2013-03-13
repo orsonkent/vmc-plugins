@@ -5,7 +5,7 @@ module VMCAppfog
     input :service, :desc => "Service to export", :argument => :optional,
           :from_given => by_name(:service_instance, "service")
     def export_service
-      service = input[:export_service]
+      service = input[:service]
 
       export_info =
         with_progress("Exporting service #{c(service.name, :name)}") do

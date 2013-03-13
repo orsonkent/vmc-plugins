@@ -6,7 +6,7 @@ module VMCAppfog
           :from_given => by_name(:service_instance, "service")
     input :url, :desc => "Data url to import", :argument => :optional
     def import_service
-      service = input[:import_service]
+      service = input[:service]
       url = input[:url]
 
       import_info =

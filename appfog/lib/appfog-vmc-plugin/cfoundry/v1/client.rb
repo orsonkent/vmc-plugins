@@ -74,7 +74,7 @@ module CFoundry::V1
     end
 
     def export_service(service_name)
-      @base.get("services", "export", service_name, :accept => :json)
+      @base.get("services", "export", service_name, :accept => :json, :retry => false)
     end
 
     def import_service(service_name, uri)
