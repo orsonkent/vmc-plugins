@@ -14,7 +14,7 @@ This plugin allows you to make manual HTTP requests to the Cloud Foundry REST AP
 
 ### Installation
 ```
-gem install admin-vmc-plugin
+gem install appfog-admin-vmc-plugin
 ```
 
 ### Usage
@@ -33,7 +33,7 @@ This plugin lets you connect to a Cloud Foundry application via telnet.
 
 ### Installation
 ```
-gem install console-vmc-plugin
+gem install appfog-console-vmc-plugin
 ```
 
 ### Usage
@@ -72,7 +72,7 @@ This plugin allows you to connect to a Cloud Foundry service using your own comm
 
 ### Installation
 ```
-gem install tunnel-vmc-plugin
+gem install appfog-tunnel-vmc-plugin
 ```
 
 ### Usage

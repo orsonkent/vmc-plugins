@@ -6,7 +6,7 @@ require "cfoundry/test_support"
 require "vmc"
 require "vmc/test_support"
 
-require "#{SPEC_ROOT}/../lib/tunnel-vmc-plugin/plugin"
+require "#{SPEC_ROOT}/../lib/appfog-tunnel-vmc-plugin/plugin"
 
 RSpec.configure do |c|
   c.include Fake::FakeMethods

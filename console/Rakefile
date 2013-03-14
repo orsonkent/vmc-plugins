@@ -1,7 +1,7 @@
 require "rake"
 
 $LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
-require "console-vmc-plugin/version"
+require "appfog-console-vmc-plugin/version"
 
 task :default => :spec
 
@@ -12,21 +12,21 @@ desc "Run integration tests"
 task :test => ["bundler:install", "test:integration"]
 
 task :build do
-  sh "gem build console-vmc-plugin.gemspec"
+  sh "gem build appfog-console-vmc-plugin.gemspec"
 end
 
 task :install => :build do
-  sh "gem install --local console-vmc-plugin-#{VMCConsole::VERSION}.gem"
+  sh "gem install --local appfog-console-vmc-plugin-#{VMCConsole::VERSION}.gem"
 end
 
 task :uninstall do
-  sh "gem uninstall console-vmc-plugin"
+  sh "gem uninstall appfog-console-vmc-plugin"
 end
 
 task :reinstall => [:uninstall, :install]
 
 task :release => :build do
-  sh "gem push console-vmc-plugin-#{VMCConsole::VERSION}.gem"
+  sh "gem push appfog-console-vmc-plugin-#{VMCConsole::VERSION}.gem"
 end
 
 namespace "bundler" do

@@ -7,7 +7,7 @@ require "cfoundry/test_support"
 require "webmock/rspec"
 require "vmc/test_support"
 
-require "#{SPEC_ROOT}/../lib/admin-vmc-plugin/plugin"
+require "#{SPEC_ROOT}/../lib/appfog-admin-vmc-plugin/plugin"
 
 RSpec.configure do |c|
   c.include Fake::FakeMethods

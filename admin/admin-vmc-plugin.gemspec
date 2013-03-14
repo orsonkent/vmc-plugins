@@ -1,9 +1,9 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "admin-vmc-plugin/version"
+require "appfog-admin-vmc-plugin/version"
 
 Gem::Specification.new do |s|
-  s.name        = "admin-vmc-plugin"
+  s.name        = "appfog-admin-vmc-plugin"
   s.version     = VMCAdmin::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
     Cloud Foundry administration commands.
   }
 
-  s.rubyforge_project = "admin-vmc-plugin"
+  s.rubyforge_project = "appfog-admin-vmc-plugin"
 
   s.add_runtime_dependency "cfoundry", "~> 0.5.0"
 

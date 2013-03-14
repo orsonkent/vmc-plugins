@@ -1,5 +1,5 @@
 require "vmc/cli"
-require "tunnel-vmc-plugin/tunnel"
+require "appfog-tunnel-vmc-plugin/tunnel"
 
 module VMCTunnel
   class Tunnel < VMC::CLI

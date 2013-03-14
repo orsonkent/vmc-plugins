@@ -5,31 +5,25 @@
 #############
 
 $:.push File.expand_path("../lib", __FILE__)
-require "tunnel-vmc-plugin/version"
+require "appfog-console-vmc-plugin/version"
 
 Gem::Specification.new do |s|
-  s.name        = "tunnel-vmc-plugin"
-  s.version     = VMCTunnel::VERSION.dup
+  s.name        = "appfog-console-vmc-plugin"
+  s.version     = VMCConsole::VERSION.dup
   s.authors     = ["Alex Suraci"]
   s.email       = ["asuraci@vmware.com"]
   s.homepage    = "http://cloudfoundry.com/"
   s.summary     = %q{
-    External access to your services on Cloud Foundry via a Caldecott HTTP
-    tunnel.
+    Port of rails-console to vmc-ng.
   }
 
-  s.rubyforge_project = "tunnel-vmc-plugin"
+  s.rubyforge_project = "appfog-console-vmc-plugin"
 
-  s.files         = %w{Rakefile} + Dir.glob("{lib,helper-app,config}/**/*")
+  s.files         = %w{Rakefile} + Dir.glob("lib/**/*")
   s.test_files    = Dir.glob("spec/**/*")
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency "cfoundry", "~> 0.5.0"
-
-  s.add_runtime_dependency "addressable", "~> 2.2"
-  s.add_runtime_dependency "caldecott-client", "~> 0.0.2"
-  s.add_runtime_dependency "rest-client", "~> 1.6"
-  s.add_runtime_dependency "uuidtools", "~> 2.1"
+  s.add_runtime_dependency "appfog-tunnel-vmc-plugin", "~> 0.0.1"
 
   s.add_development_dependency "rake", "~> 0.9"
   s.add_development_dependency "rspec", "~> 2.11"

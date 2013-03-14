@@ -5,7 +5,7 @@ source "http://rubygems.org"
 #############
 
 gem "cfoundry", :git => "git://github.com/cloudfoundry/vmc-lib.git"
-gem "vmc", :git => "git://github.com/cloudfoundry/vmc.git"
+gem "af", :git => "git://github.com/appfog/af.git", :branch => "rebuild"
 
 group :development, :test do
   gem "rake"

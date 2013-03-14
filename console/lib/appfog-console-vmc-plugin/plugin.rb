@@ -1,5 +1,5 @@
 require "vmc/plugin"
-require "console-vmc-plugin/console"
+require "appfog-console-vmc-plugin/console"
 
 module VMCConsole
   class Console < VMC::CLI
